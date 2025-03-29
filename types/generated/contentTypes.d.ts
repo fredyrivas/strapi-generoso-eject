@@ -372,7 +372,8 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
 export interface ApiHomeSliderHomeSlider extends Struct.CollectionTypeSchema {
   collectionName: 'home_sliders';
   info: {
-    displayName: 'MenuSlider';
+    description: '';
+    displayName: 'HomeSlider';
     pluralName: 'home-sliders';
     singularName: 'home-slider';
   };

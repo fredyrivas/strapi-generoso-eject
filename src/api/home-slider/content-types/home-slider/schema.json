@@ -4,7 +4,8 @@
   "info": {
     "singularName": "home-slider",
     "pluralName": "home-sliders",
-    "displayName": "MenuSlider"
+    "displayName": "HomeSlider",
+    "description": ""
   },
   "options": {
     "draftAndPublish": true
@@ -17,14 +18,15 @@
       "type": "integer"
     },
     "image": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
       "allowedTypes": [
         "images",
         "files",
         "videos",
         "audios"
-      ],
-      "type": "media",
-      "multiple": true
+      ]
     }
   }
 }
