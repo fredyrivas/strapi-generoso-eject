@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "sandwiches_sliders",
+  "info": {
+    "singularName": "sandwiches-slider",
+    "pluralName": "sandwiches-sliders",
+    "displayName": "SandwichesSlider"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "image": {
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ],
+      "type": "media",
+      "multiple": false
+    },
+    "visible": {
+      "type": "boolean"
+    },
+    "order": {
+      "type": "integer"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "kind": "collectionType",
+  "collectionName": "desayunos_sliders",
+  "info": {
+    "singularName": "desayunos-slider",
+    "pluralName": "desayunos-sliders",
+    "displayName": "DesayunosSlider",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "visible": {
+      "type": "boolean"
+    },
+    "order": {
+      "type": "integer"
+    }
+  }
+}
