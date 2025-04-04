@@ -35,9 +35,6 @@
     "order": {
       "type": "integer"
     },
-    "description": {
-      "type": "richtext"
-    },
     "menu_category": {
       "type": "relation",
       "relation": "oneToOne",
@@ -45,6 +42,9 @@
     },
     "visible": {
       "type": "boolean"
+    },
+    "desc": {
+      "type": "blocks"
     }
   }
 }
