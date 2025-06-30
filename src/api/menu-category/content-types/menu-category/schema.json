@@ -35,8 +35,15 @@
       "type": "uid",
       "targetField": "name"
     },
-    "test": {
-      "type": "string"
+    "cover": {
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ],
+      "type": "media",
+      "multiple": false
     }
   }
 }
