@@ -404,6 +404,48 @@ export interface ApiBebidasCategoryBebidasCategory
   };
 }
 
+export interface ApiCheckinCheckin extends Struct.CollectionTypeSchema {
+  collectionName: 'checkins';
+  info: {
+    displayName: 'checkin';
+    pluralName: 'checkins';
+    singularName: 'checkin';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    dia_nombre: Schema.Attribute.Enumeration<
+      [
+        'Lunes',
+        'Martes',
+        'Mi\u00E9rcoles',
+        'Jueves',
+        'Viernes',
+        'S\u00E1bado',
+        'Domingo',
+      ]
+    >;
+    empleado: Schema.Attribute.String;
+    fecha_dia: Schema.Attribute.Date;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::checkin.checkin'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    puntual: Schema.Attribute.Boolean;
+    timestamp: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiDesayunosSliderDesayunosSlider
   extends Struct.CollectionTypeSchema {
   collectionName: 'desayunos_sliders';
@@ -1086,6 +1128,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::bebidas-category.bebidas-category': ApiBebidasCategoryBebidasCategory;
+      'api::checkin.checkin': ApiCheckinCheckin;
       'api::desayunos-slider.desayunos-slider': ApiDesayunosSliderDesayunosSlider;
       'api::home-slider.home-slider': ApiHomeSliderHomeSlider;
       'api::menu-category.menu-category': ApiMenuCategoryMenuCategory;

@@ -1,0 +1,38 @@
+{
+  "kind": "collectionType",
+  "collectionName": "checkins",
+  "info": {
+    "singularName": "checkin",
+    "pluralName": "checkins",
+    "displayName": "checkin"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "empleado": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "datetime"
+    },
+    "puntual": {
+      "type": "boolean"
+    },
+    "fecha_dia": {
+      "type": "date"
+    },
+    "dia_nombre": {
+      "type": "enumeration",
+      "enum": [
+        "Lunes",
+        "Martes",
+        "Miércoles",
+        "Jueves",
+        "Viernes",
+        "Sábado",
+        "Domingo"
+      ]
+    }
+  }
+}
