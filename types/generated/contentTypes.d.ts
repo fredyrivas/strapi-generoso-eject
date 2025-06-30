@@ -369,6 +369,39 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiBebidasCategoryBebidasCategory
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'bebidas_categories';
+  info: {
+    displayName: 'BebidasCategory';
+    pluralName: 'bebidas-categories';
+    singularName: 'bebidas-category';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    image: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::bebidas-category.bebidas-category'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String;
+    order: Schema.Attribute.Integer;
+    publishedAt: Schema.Attribute.DateTime;
+    slug: Schema.Attribute.UID<'name'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    visible: Schema.Attribute.Boolean;
+  };
+}
+
 export interface ApiDesayunosSliderDesayunosSlider
   extends Struct.CollectionTypeSchema {
   collectionName: 'desayunos_sliders';
@@ -436,6 +469,7 @@ export interface ApiMenuCategoryMenuCategory
   extends Struct.CollectionTypeSchema {
   collectionName: 'menu_categories';
   info: {
+    description: '';
     displayName: 'MenuCategory';
     pluralName: 'menu-categories';
     singularName: 'menu-category';
@@ -458,6 +492,7 @@ export interface ApiMenuCategoryMenuCategory
     order: Schema.Attribute.Integer;
     publishedAt: Schema.Attribute.DateTime;
     slug: Schema.Attribute.UID<'name'>;
+    test: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -477,6 +512,10 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
+    bebidas_category: Schema.Attribute.Relation<
+      'oneToOne',
+      'api::bebidas-category.bebidas-category'
+    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1044,6 +1083,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::bebidas-category.bebidas-category': ApiBebidasCategoryBebidasCategory;
       'api::desayunos-slider.desayunos-slider': ApiDesayunosSliderDesayunosSlider;
       'api::home-slider.home-slider': ApiHomeSliderHomeSlider;
       'api::menu-category.menu-category': ApiMenuCategoryMenuCategory;

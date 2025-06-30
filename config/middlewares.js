@@ -7,8 +7,7 @@ module.exports = [
       contentSecurityPolicy: {
         useDefaults: true,
         directives: {
-          'img-src': ["'self'", 'data:', 'blob:', 'res.cloudinary.com', 'https://market-assets.strapi.io'],
-          'media-src': ["'self'", 'data:', 'blob:', 'res.cloudinary.com'],
+          'img-src': ["'self'", "data:", "blob:", "https://website-generoso.s3.us-east-1.amazonaws.com"],
         },
       },
     },

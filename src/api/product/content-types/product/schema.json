@@ -45,6 +45,11 @@
     },
     "desc": {
       "type": "blocks"
+    },
+    "bebidas_category": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::bebidas-category.bebidas-category"
     }
   }
 }

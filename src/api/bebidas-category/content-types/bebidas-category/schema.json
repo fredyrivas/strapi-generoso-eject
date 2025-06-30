@@ -1,11 +1,10 @@
 {
   "kind": "collectionType",
-  "collectionName": "menu_categories",
+  "collectionName": "bebidas_categories",
   "info": {
-    "singularName": "menu-category",
-    "pluralName": "menu-categories",
-    "displayName": "MenuCategory",
-    "description": ""
+    "singularName": "bebidas-category",
+    "pluralName": "bebidas-categories",
+    "displayName": "BebidasCategory"
   },
   "options": {
     "draftAndPublish": true
@@ -21,22 +20,18 @@
       "type": "integer"
     },
     "image": {
-      "type": "media",
-      "multiple": false,
-      "required": false,
       "allowedTypes": [
         "images",
         "files",
         "videos",
         "audios"
-      ]
+      ],
+      "type": "media",
+      "multiple": false
     },
     "slug": {
       "type": "uid",
       "targetField": "name"
-    },
-    "test": {
-      "type": "string"
     }
   }
 }
