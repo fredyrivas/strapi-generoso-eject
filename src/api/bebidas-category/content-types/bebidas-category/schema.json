@@ -4,7 +4,8 @@
   "info": {
     "singularName": "bebidas-category",
     "pluralName": "bebidas-categories",
-    "displayName": "BebidasCategory"
+    "displayName": "BebidasCategory",
+    "description": ""
   },
   "options": {
     "draftAndPublish": true
@@ -20,6 +21,21 @@
       "type": "integer"
     },
     "image": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name"
+    },
+    "cover": {
       "allowedTypes": [
         "images",
         "files",
@@ -28,10 +44,6 @@
       ],
       "type": "media",
       "multiple": false
-    },
-    "slug": {
-      "type": "uid",
-      "targetField": "name"
     }
   }
 }

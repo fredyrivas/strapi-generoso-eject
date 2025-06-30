@@ -373,6 +373,7 @@ export interface ApiBebidasCategoryBebidasCategory
   extends Struct.CollectionTypeSchema {
   collectionName: 'bebidas_categories';
   info: {
+    description: '';
     displayName: 'BebidasCategory';
     pluralName: 'bebidas-categories';
     singularName: 'bebidas-category';
@@ -381,6 +382,7 @@ export interface ApiBebidasCategoryBebidasCategory
     draftAndPublish: true;
   };
   attributes: {
+    cover: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
