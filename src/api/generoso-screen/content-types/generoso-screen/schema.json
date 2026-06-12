@@ -13,7 +13,7 @@
   "attributes": {
     "image": {
       "type": "media",
-      "multiple": true,
+      "multiple": false,
       "required": false,
       "allowedTypes": [
         "images",
@@ -27,6 +27,9 @@
     },
     "order": {
       "type": "integer"
+    },
+    "duration": {
+      "type": "decimal"
     }
   }
 }
