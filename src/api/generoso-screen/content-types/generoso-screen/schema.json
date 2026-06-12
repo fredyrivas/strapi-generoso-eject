@@ -1,0 +1,32 @@
+{
+  "kind": "collectionType",
+  "collectionName": "generoso_screens",
+  "info": {
+    "singularName": "generoso-screen",
+    "pluralName": "generoso-screens",
+    "displayName": "generoso-screen",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "image": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "visible": {
+      "type": "boolean"
+    },
+    "order": {
+      "type": "integer"
+    }
+  }
+}

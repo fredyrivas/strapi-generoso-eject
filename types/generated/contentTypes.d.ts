@@ -478,6 +478,41 @@ export interface ApiDesayunosSliderDesayunosSlider
   };
 }
 
+export interface ApiGenerosoScreenGenerosoScreen
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'generoso_screens';
+  info: {
+    description: '';
+    displayName: 'generoso-screen';
+    pluralName: 'generoso-screens';
+    singularName: 'generoso-screen';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    image: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios',
+      true
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::generoso-screen.generoso-screen'
+    > &
+      Schema.Attribute.Private;
+    order: Schema.Attribute.Integer;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    visible: Schema.Attribute.Boolean;
+  };
+}
+
 export interface ApiHomeSliderHomeSlider extends Struct.CollectionTypeSchema {
   collectionName: 'home_sliders';
   info: {
@@ -1131,6 +1166,7 @@ declare module '@strapi/strapi' {
       'api::bebidas-category.bebidas-category': ApiBebidasCategoryBebidasCategory;
       'api::checkin.checkin': ApiCheckinCheckin;
       'api::desayunos-slider.desayunos-slider': ApiDesayunosSliderDesayunosSlider;
+      'api::generoso-screen.generoso-screen': ApiGenerosoScreenGenerosoScreen;
       'api::home-slider.home-slider': ApiHomeSliderHomeSlider;
       'api::menu-category.menu-category': ApiMenuCategoryMenuCategory;
       'api::product.product': ApiProductProduct;
