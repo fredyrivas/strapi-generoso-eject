@@ -53,6 +53,9 @@
     },
     "priceCombo": {
       "type": "string"
+    },
+    "flag": {
+      "type": "string"
     }
   }
 }
