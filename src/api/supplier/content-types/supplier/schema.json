@@ -1,0 +1,29 @@
+{
+  "kind": "collectionType",
+  "collectionName": "suppliers",
+  "info": {
+    "singularName": "supplier",
+    "pluralName": "suppliers",
+    "displayName": "Proveedor",
+    "description": "Catálogo de proveedores para las compras operativas."
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "name": { "type": "string", "required": true, "unique": true },
+    "frequency": { "type": "string", "required": true },
+    "day": { "type": "string", "required": true },
+    "active": { "type": "boolean", "default": true },
+    "items": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::purchase-item.purchase-item",
+      "mappedBy": "supplier"
+    },
+    "purchaseRuns": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::purchase-run.purchase-run",
+      "mappedBy": "supplier"
+    }
+  }
+}

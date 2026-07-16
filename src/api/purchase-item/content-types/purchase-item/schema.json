@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "purchase_items",
+  "info": {
+    "singularName": "purchase-item",
+    "pluralName": "purchase-items",
+    "displayName": "Producto de compra",
+    "description": "Catálogo de productos que se adquieren a un proveedor."
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "name": { "type": "string", "required": true },
+    "presentation": { "type": "string", "required": true },
+    "unitCost": { "type": "decimal", "default": 0, "min": 0 },
+    "active": { "type": "boolean", "default": true },
+    "sortOrder": { "type": "integer", "default": 0, "min": 0 },
+    "supplier": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::supplier.supplier",
+      "inversedBy": "items"
+    },
+    "purchaseRunItems": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::purchase-run-item.purchase-run-item",
+      "mappedBy": "item"
+    }
+  }
+}
