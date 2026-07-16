@@ -1,0 +1,34 @@
+{
+  "kind": "collectionType",
+  "collectionName": "production_areas",
+  "info": {
+    "singularName": "production-area",
+    "pluralName": "production-areas",
+    "displayName": "Área de producción",
+    "description": "Catálogo de áreas en las que se agrupa la producción diaria."
+  },
+  "options": { "draftAndPublish": true },
+  "attributes": {
+    "name": { "type": "string", "required": true, "unique": true },
+    "tone": {
+      "type": "enumeration",
+      "enum": ["gold", "blue", "orange", "green"],
+      "required": true,
+      "default": "gold"
+    },
+    "sortOrder": { "type": "integer", "default": 0, "min": 0 },
+    "active": { "type": "boolean", "default": true },
+    "productionItems": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::production-item.production-item",
+      "mappedBy": "productionArea"
+    },
+    "productionRuns": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::production-run.production-run",
+      "mappedBy": "productionArea"
+    }
+  }
+}

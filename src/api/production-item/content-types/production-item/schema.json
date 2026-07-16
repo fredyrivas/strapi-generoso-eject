@@ -1,0 +1,29 @@
+{
+  "kind": "collectionType",
+  "collectionName": "production_items",
+  "info": {
+    "singularName": "production-item",
+    "pluralName": "production-items",
+    "displayName": "Producto de producción",
+    "description": "Catálogo de tareas o productos de producción por área."
+  },
+  "options": { "draftAndPublish": true },
+  "attributes": {
+    "name": { "type": "string", "required": true },
+    "defaultBatchSize": { "type": "string", "required": true },
+    "sortOrder": { "type": "integer", "default": 0, "min": 0 },
+    "active": { "type": "boolean", "default": true },
+    "productionArea": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::production-area.production-area",
+      "inversedBy": "productionItems"
+    },
+    "productionRunItems": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::production-run-item.production-run-item",
+      "mappedBy": "productionItem"
+    }
+  }
+}

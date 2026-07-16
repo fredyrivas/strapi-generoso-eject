@@ -622,6 +622,196 @@ export interface ApiProductProduct extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiProductionAreaProductionArea
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'production_areas';
+  info: {
+    description: 'Cat\u00E1logo de \u00E1reas en las que se agrupa la producci\u00F3n diaria.';
+    displayName: '\u00C1rea de producci\u00F3n';
+    pluralName: 'production-areas';
+    singularName: 'production-area';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    active: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::production-area.production-area'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    productionItems: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::production-item.production-item'
+    >;
+    productionRuns: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::production-run.production-run'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    sortOrder: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<0>;
+    tone: Schema.Attribute.Enumeration<['gold', 'blue', 'orange', 'green']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'gold'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiProductionItemProductionItem
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'production_items';
+  info: {
+    description: 'Cat\u00E1logo de tareas o productos de producci\u00F3n por \u00E1rea.';
+    displayName: 'Producto de producci\u00F3n';
+    pluralName: 'production-items';
+    singularName: 'production-item';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    active: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    defaultBatchSize: Schema.Attribute.String & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::production-item.production-item'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    productionArea: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::production-area.production-area'
+    >;
+    productionRunItems: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::production-run-item.production-run-item'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    sortOrder: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<0>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiProductionRunItemProductionRunItem
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'production_run_items';
+  info: {
+    description: 'Lotes y estado de un producto dentro de una jornada de producci\u00F3n.';
+    displayName: 'Rengl\u00F3n de producci\u00F3n';
+    pluralName: 'production-run-items';
+    singularName: 'production-run-item';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    batches: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<0>;
+    batchSizeSnapshot: Schema.Attribute.String & Schema.Attribute.Required;
+    completed: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    completedAt: Schema.Attribute.DateTime;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::production-run-item.production-run-item'
+    > &
+      Schema.Attribute.Private;
+    productionItem: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::production-item.production-item'
+    >;
+    productionRun: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::production-run.production-run'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiProductionRunProductionRun
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'production_runs';
+  info: {
+    description: 'Producci\u00F3n de un \u00E1rea en una fecha determinada.';
+    displayName: 'Jornada de producci\u00F3n';
+    pluralName: 'production-runs';
+    singularName: 'production-run';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    date: Schema.Attribute.Date & Schema.Attribute.Required;
+    items: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::production-run-item.production-run-item'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::production-run.production-run'
+    > &
+      Schema.Attribute.Private;
+    productionArea: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::production-area.production-area'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<['draft', 'open', 'complete']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'draft'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiPurchaseItemPurchaseItem
   extends Struct.CollectionTypeSchema {
   collectionName: 'purchase_items';
@@ -1378,6 +1568,10 @@ declare module '@strapi/strapi' {
       'api::home-slider.home-slider': ApiHomeSliderHomeSlider;
       'api::menu-category.menu-category': ApiMenuCategoryMenuCategory;
       'api::product.product': ApiProductProduct;
+      'api::production-area.production-area': ApiProductionAreaProductionArea;
+      'api::production-item.production-item': ApiProductionItemProductionItem;
+      'api::production-run-item.production-run-item': ApiProductionRunItemProductionRunItem;
+      'api::production-run.production-run': ApiProductionRunProductionRun;
       'api::purchase-item.purchase-item': ApiPurchaseItemPurchaseItem;
       'api::purchase-run-item.purchase-run-item': ApiPurchaseRunItemPurchaseRunItem;
       'api::purchase-run.purchase-run': ApiPurchaseRunPurchaseRun;
