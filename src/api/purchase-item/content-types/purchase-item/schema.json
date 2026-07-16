@@ -14,6 +14,12 @@
     "unitCost": { "type": "decimal", "default": 0, "min": 0 },
     "active": { "type": "boolean", "default": true },
     "sortOrder": { "type": "integer", "default": 0, "min": 0 },
+    "quantityMode": {
+      "type": "enumeration",
+      "enum": ["service", "production", "both"],
+      "default": "both",
+      "required": true
+    },
     "supplier": {
       "type": "relation",
       "relation": "manyToOne",

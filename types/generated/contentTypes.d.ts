@@ -652,6 +652,11 @@ export interface ApiPurchaseItemPurchaseItem
       'oneToMany',
       'api::purchase-run-item.purchase-run-item'
     >;
+    quantityMode: Schema.Attribute.Enumeration<
+      ['service', 'production', 'both']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'both'>;
     sortOrder: Schema.Attribute.Integer &
       Schema.Attribute.SetMinMax<
         {
