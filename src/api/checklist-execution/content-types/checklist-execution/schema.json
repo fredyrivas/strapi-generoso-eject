@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "checklist_executions",
+  "info": {
+    "singularName": "checklist-execution",
+    "pluralName": "checklist-executions",
+    "displayName": "Ejecución de checklist",
+    "description": "Instancia programada e historial de una tarea del Daily Checklist."
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "task": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::checklist-task.checklist-task",
+      "inversedBy": "executions",
+      "required": true
+    },
+    "scheduledFor": { "type": "date", "required": true },
+    "shift": {
+      "type": "enumeration",
+      "enum": ["service", "production"],
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "reviewed", "completed"],
+      "default": "pending",
+      "required": true
+    },
+    "reviewedAt": { "type": "datetime" },
+    "completedAt": { "type": "datetime" },
+    "notes": { "type": "text" }
+  }
+}

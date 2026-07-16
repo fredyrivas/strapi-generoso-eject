@@ -1,0 +1,29 @@
+{
+  "kind": "collectionType",
+  "collectionName": "checklist_tasks",
+  "info": {
+    "singularName": "checklist-task",
+    "pluralName": "checklist-tasks",
+    "displayName": "Tarea de checklist",
+    "description": "Definición recurrente de una tarea del Daily Checklist."
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "name": { "type": "string", "required": true },
+    "intervalDays": { "type": "integer", "required": true, "min": 1 },
+    "lastDoneAt": { "type": "date" },
+    "lastShift": {
+      "type": "enumeration",
+      "enum": ["service", "production"]
+    },
+    "alternatesShifts": { "type": "boolean", "default": false },
+    "active": { "type": "boolean", "default": true },
+    "sortOrder": { "type": "integer", "default": 0 },
+    "executions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::checklist-execution.checklist-execution",
+      "mappedBy": "task"
+    }
+  }
+}
