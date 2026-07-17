@@ -462,6 +462,11 @@ export interface ApiChecklistExecutionChecklistExecution
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    executionStatus: Schema.Attribute.Enumeration<
+      ['pending', 'reviewed', 'completed']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'pending'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -474,9 +479,6 @@ export interface ApiChecklistExecutionChecklistExecution
     scheduledFor: Schema.Attribute.Date & Schema.Attribute.Required;
     shift: Schema.Attribute.Enumeration<['service', 'production']> &
       Schema.Attribute.Required;
-    status: Schema.Attribute.Enumeration<['pending', 'reviewed', 'completed']> &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<'pending'>;
     task: Schema.Attribute.Relation<
       'manyToOne',
       'api::checklist-task.checklist-task'

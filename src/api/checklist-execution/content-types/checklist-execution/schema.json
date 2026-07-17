@@ -22,7 +22,7 @@
       "enum": ["service", "production"],
       "required": true
     },
-    "status": {
+    "executionStatus": {
       "type": "enumeration",
       "enum": ["pending", "reviewed", "completed"],
       "default": "pending",

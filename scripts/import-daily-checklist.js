@@ -135,7 +135,7 @@ async function ensureExecution(strapi, task, item) {
       task: task.documentId,
       scheduledFor: item.scheduledFor,
       shift: item.nextShift,
-      status: 'pending',
+      executionStatus: 'pending',
       reviewedAt: item.reviewedAt,
     },
   });
