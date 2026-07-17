@@ -11,7 +11,6 @@
   "attributes": {
     "name": { "type": "string", "required": true },
     "intervalDays": { "type": "integer", "required": true, "min": 1 },
-    "lastDoneAt": { "type": "date" },
     "lastShift": {
       "type": "enumeration",
       "enum": ["service", "production"]

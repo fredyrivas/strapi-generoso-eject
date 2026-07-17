@@ -29,7 +29,6 @@
       "required": true
     },
     "reviewedAt": { "type": "datetime" },
-    "completedAt": { "type": "datetime" },
     "notes": { "type": "text" }
   }
 }

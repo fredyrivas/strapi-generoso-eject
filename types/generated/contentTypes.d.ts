@@ -459,7 +459,6 @@ export interface ApiChecklistExecutionChecklistExecution
     draftAndPublish: false;
   };
   attributes: {
-    completedAt: Schema.Attribute.DateTime;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -520,7 +519,6 @@ export interface ApiChecklistTaskChecklistTask
         },
         number
       >;
-    lastDoneAt: Schema.Attribute.Date;
     lastShift: Schema.Attribute.Enumeration<['service', 'production']>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<

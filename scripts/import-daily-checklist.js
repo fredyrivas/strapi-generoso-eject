@@ -68,6 +68,10 @@ function parseSpanishDate(value) {
   return `${year}-${String(month + 1).padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
+function mexicoDateAsDatetime(date) {
+  return `${date}T12:00:00.000-06:00`;
+}
+
 function shift(value) {
   const normalized = value.trim().toLowerCase();
   if (normalized === 'servicio') return 'service';
@@ -98,7 +102,7 @@ function readTasks(csv) {
     return {
       name,
       intervalDays,
-      lastDoneAt: parseSpanishDate(rawLastDone),
+      reviewedAt: mexicoDateAsDatetime(parseSpanishDate(rawLastDone)),
       lastShift: shift(rawLastShift),
       alternatesShifts: rawAlternates === 'Sí',
       nextShift: shift(rawNextShift),
@@ -132,6 +136,7 @@ async function ensureExecution(strapi, task, item) {
       scheduledFor: item.scheduledFor,
       shift: item.nextShift,
       status: 'pending',
+      reviewedAt: item.reviewedAt,
     },
   });
   return true;
@@ -155,7 +160,6 @@ async function main() {
           data: {
             name: item.name,
             intervalDays: item.intervalDays,
-            lastDoneAt: item.lastDoneAt,
             lastShift: item.lastShift,
             alternatesShifts: item.alternatesShifts,
             active: true,
