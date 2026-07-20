@@ -5,24 +5,39 @@
     "singularName": "checklist-task",
     "pluralName": "checklist-tasks",
     "displayName": "Tarea de checklist",
-    "description": "Definición recurrente de una tarea del Daily Checklist."
+    "description": "Tarea independiente del Daily Checklist."
   },
   "options": { "draftAndPublish": false },
   "attributes": {
     "name": { "type": "string", "required": true },
-    "intervalDays": { "type": "integer", "required": true, "min": 1 },
-    "lastShift": {
-      "type": "enumeration",
-      "enum": ["service", "production"]
-    },
+    "scheduledFor": { "type": "date", "required": true },
+    "interval": { "type": "integer", "min": 1 },
+    "lastDone": { "type": "date" },
     "alternatesShifts": { "type": "boolean", "default": false },
-    "active": { "type": "boolean", "default": true },
-    "sortOrder": { "type": "integer", "default": 0 },
-    "executions": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::checklist-execution.checklist-execution",
-      "mappedBy": "task"
-    }
+    "previousShift": {
+      "type": "enumeration",
+      "enum": ["servicio", "producción", "servicio y producción"]
+    },
+    "currentShift": {
+      "type": "enumeration",
+      "enum": ["servicio", "producción", "servicio y producción"]
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["vencida", "hoy", "proxima", "terminada", "revisada"],
+      "default": "hoy",
+      "required": true
+    },
+    "taskType": {
+      "type": "enumeration",
+      "enum": ["interval", "weekdays"],
+      "default": "interval",
+      "required": true
+    },
+    "frecuency": {
+      "type": "enumeration",
+      "enum": ["weekly", "biweekly", "monthly"]
+    },
+    "weekdays": { "type": "integer", "min": 1, "max": 7 }
   }
 }

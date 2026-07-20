@@ -446,55 +446,11 @@ export interface ApiCheckinCheckin extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiChecklistExecutionChecklistExecution
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'checklist_executions';
-  info: {
-    description: 'Instancia programada e historial de una tarea del Daily Checklist.';
-    displayName: 'Ejecuci\u00F3n de checklist';
-    pluralName: 'checklist-executions';
-    singularName: 'checklist-execution';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    executionStatus: Schema.Attribute.Enumeration<
-      ['pending', 'reviewed', 'completed']
-    > &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<'pending'>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::checklist-execution.checklist-execution'
-    > &
-      Schema.Attribute.Private;
-    notes: Schema.Attribute.Text;
-    publishedAt: Schema.Attribute.DateTime;
-    reviewedAt: Schema.Attribute.DateTime;
-    scheduledFor: Schema.Attribute.Date & Schema.Attribute.Required;
-    shift: Schema.Attribute.Enumeration<['service', 'production']> &
-      Schema.Attribute.Required;
-    task: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::checklist-task.checklist-task'
-    > &
-      Schema.Attribute.Required;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
 export interface ApiChecklistTaskChecklistTask
   extends Struct.CollectionTypeSchema {
   collectionName: 'checklist_tasks';
   info: {
-    description: 'Definici\u00F3n recurrente de una tarea del Daily Checklist.';
+    description: 'Tarea independiente del Daily Checklist.';
     displayName: 'Tarea de checklist';
     pluralName: 'checklist-tasks';
     singularName: 'checklist-task';
@@ -503,25 +459,23 @@ export interface ApiChecklistTaskChecklistTask
     draftAndPublish: false;
   };
   attributes: {
-    active: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     alternatesShifts: Schema.Attribute.Boolean &
       Schema.Attribute.DefaultTo<false>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    executions: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::checklist-execution.checklist-execution'
+    currentShift: Schema.Attribute.Enumeration<
+      ['servicio', 'producci\u00F3n', 'servicio y producci\u00F3n']
     >;
-    intervalDays: Schema.Attribute.Integer &
-      Schema.Attribute.Required &
+    frecuency: Schema.Attribute.Enumeration<['weekly', 'biweekly', 'monthly']>;
+    interval: Schema.Attribute.Integer &
       Schema.Attribute.SetMinMax<
         {
           min: 1;
         },
         number
       >;
-    lastShift: Schema.Attribute.Enumeration<['service', 'production']>;
+    lastDone: Schema.Attribute.Date;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -529,11 +483,30 @@ export interface ApiChecklistTaskChecklistTask
     > &
       Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
+    previousShift: Schema.Attribute.Enumeration<
+      ['servicio', 'producci\u00F3n', 'servicio y producci\u00F3n']
+    >;
     publishedAt: Schema.Attribute.DateTime;
-    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    scheduledFor: Schema.Attribute.Date & Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<
+      ['vencida', 'hoy', 'proxima', 'terminada', 'revisada']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'hoy'>;
+    taskType: Schema.Attribute.Enumeration<['interval', 'weekdays']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'interval'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    weekdays: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 7;
+          min: 1;
+        },
+        number
+      >;
   };
 }
 
@@ -1468,7 +1441,6 @@ declare module '@strapi/strapi' {
       'admin::user': AdminUser;
       'api::bebidas-category.bebidas-category': ApiBebidasCategoryBebidasCategory;
       'api::checkin.checkin': ApiCheckinCheckin;
-      'api::checklist-execution.checklist-execution': ApiChecklistExecutionChecklistExecution;
       'api::checklist-task.checklist-task': ApiChecklistTaskChecklistTask;
       'api::desayunos-slider.desayunos-slider': ApiDesayunosSliderDesayunosSlider;
       'api::generoso-screen.generoso-screen': ApiGenerosoScreenGenerosoScreen;

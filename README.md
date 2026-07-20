@@ -35,3 +35,9 @@ When developing locally this Strapi template will connect to the Postgres server
 
 - After your app is deployed, visit the `/admin` endpoint to create your admin user.
 - If you want to use npm with this project make sure you delete the `yarn.lock` file after you have ran `npm install`
+
+## Daily Checklist
+
+El módulo usa únicamente el collection type `checklist-task`. Cada registro guarda su propia fecha, turno y estado; no existen ejecuciones ni relaciones auxiliares.
+
+La migración `database/migrations/202607200002-reset-daily-checklist.js` elimina intencionalmente las tablas y datos del Daily Checklist anterior. Al iniciar Strapi, se crea la colección nueva vacía.
