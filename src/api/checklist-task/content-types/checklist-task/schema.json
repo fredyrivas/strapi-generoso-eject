@@ -22,7 +22,7 @@
       "type": "enumeration",
       "enum": ["servicio", "producción", "servicio y producción"]
     },
-    "status": {
+    "taskStatus": {
       "type": "enumeration",
       "enum": ["vencida", "hoy", "proxima", "terminada", "revisada"],
       "default": "hoy",

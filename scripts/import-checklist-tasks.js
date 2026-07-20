@@ -123,7 +123,7 @@ function readTasks(csv) {
       name: normalizedName,
       scheduledFor: parseDate(scheduledFor, `Línea ${line} scheduledFor`),
       taskType: optionalEnum(taskType, `Línea ${line} taskType`, TASK_TYPES),
-      status: optionalEnum(status, `Línea ${line} status`, STATUSES),
+      taskStatus: optionalEnum(status, `Línea ${line} status`, STATUSES),
       alternatesShifts: parseBoolean(alternatesShifts, `Línea ${line} alternatesShifts`),
       weekdays: optionalInteger(weekdays, `Línea ${line} weekdays`, 1, 7),
       frecuency: optionalEnum(frecuency, `Línea ${line} frecuency`, FREQUENCIES),
