@@ -840,16 +840,31 @@ export interface ApiPurchaseItemPurchaseItem
       Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     presentation: Schema.Attribute.String & Schema.Attribute.Required;
+    productionQty: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<0>;
     publishedAt: Schema.Attribute.DateTime;
-    purchaseRunItems: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::purchase-run-item.purchase-run-item'
-    >;
+    purchased: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     quantityMode: Schema.Attribute.Enumeration<
       ['service', 'production', 'both']
     > &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'both'>;
+    serviceQty: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<0>;
     sortOrder: Schema.Attribute.Integer &
       Schema.Attribute.SetMinMax<
         {
@@ -860,115 +875,6 @@ export interface ApiPurchaseItemPurchaseItem
       Schema.Attribute.DefaultTo<0>;
     supplier: Schema.Attribute.Relation<'manyToOne', 'api::supplier.supplier'>;
     unitCost: Schema.Attribute.Decimal &
-      Schema.Attribute.SetMinMax<
-        {
-          min: 0;
-        },
-        number
-      > &
-      Schema.Attribute.DefaultTo<0>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiPurchaseRunItemPurchaseRunItem
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'purchase_run_items';
-  info: {
-    description: 'Cantidades y estado de un producto dentro de una compra.';
-    displayName: 'Rengl\u00F3n de compra';
-    pluralName: 'purchase-run-items';
-    singularName: 'purchase-run-item';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    item: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::purchase-item.purchase-item'
-    >;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::purchase-run-item.purchase-run-item'
-    > &
-      Schema.Attribute.Private;
-    productionQty: Schema.Attribute.Integer &
-      Schema.Attribute.SetMinMax<
-        {
-          min: 0;
-        },
-        number
-      > &
-      Schema.Attribute.DefaultTo<0>;
-    publishedAt: Schema.Attribute.DateTime;
-    purchased: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
-    purchaseRun: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::purchase-run.purchase-run'
-    >;
-    serviceQty: Schema.Attribute.Integer &
-      Schema.Attribute.SetMinMax<
-        {
-          min: 0;
-        },
-        number
-      > &
-      Schema.Attribute.DefaultTo<0>;
-    unitCostSnapshot: Schema.Attribute.Decimal &
-      Schema.Attribute.SetMinMax<
-        {
-          min: 0;
-        },
-        number
-      > &
-      Schema.Attribute.DefaultTo<0>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiPurchaseRunPurchaseRun extends Struct.CollectionTypeSchema {
-  collectionName: 'purchase_runs';
-  info: {
-    description: 'Una lista de compra de un proveedor para una fecha determinada.';
-    displayName: 'Compra';
-    pluralName: 'purchase-runs';
-    singularName: 'purchase-run';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    date: Schema.Attribute.Date & Schema.Attribute.Required;
-    items: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::purchase-run-item.purchase-run-item'
-    >;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::purchase-run.purchase-run'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    status: Schema.Attribute.Enumeration<
-      ['draft', 'open', 'complete', 'cancelled']
-    > &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<'open'>;
-    supplier: Schema.Attribute.Relation<'manyToOne', 'api::supplier.supplier'>;
-    totalEstimated: Schema.Attribute.Decimal &
       Schema.Attribute.SetMinMax<
         {
           min: 0;
@@ -1045,10 +951,6 @@ export interface ApiSupplierSupplier extends Struct.CollectionTypeSchema {
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
     publishedAt: Schema.Attribute.DateTime;
-    purchaseRuns: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::purchase-run.purchase-run'
-    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1576,8 +1478,6 @@ declare module '@strapi/strapi' {
       'api::production-area.production-area': ApiProductionAreaProductionArea;
       'api::production-item.production-item': ApiProductionItemProductionItem;
       'api::purchase-item.purchase-item': ApiPurchaseItemPurchaseItem;
-      'api::purchase-run-item.purchase-run-item': ApiPurchaseRunItemPurchaseRunItem;
-      'api::purchase-run.purchase-run': ApiPurchaseRunPurchaseRun;
       'api::sandwiches-slider.sandwiches-slider': ApiSandwichesSliderSandwichesSlider;
       'api::supplier.supplier': ApiSupplierSupplier;
       'plugin::content-releases.release': PluginContentReleasesRelease;

@@ -18,12 +18,6 @@
       "relation": "oneToMany",
       "target": "api::purchase-item.purchase-item",
       "mappedBy": "supplier"
-    },
-    "purchaseRuns": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::purchase-run.purchase-run",
-      "mappedBy": "supplier"
     }
   }
 }

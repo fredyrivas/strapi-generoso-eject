@@ -12,6 +12,9 @@
     "name": { "type": "string", "required": true },
     "presentation": { "type": "string", "required": true },
     "unitCost": { "type": "decimal", "default": 0, "min": 0 },
+    "serviceQty": { "type": "integer", "required": true, "default": 0, "min": 0 },
+    "productionQty": { "type": "integer", "required": true, "default": 0, "min": 0 },
+    "purchased": { "type": "boolean", "default": false },
     "active": { "type": "boolean", "default": true },
     "sortOrder": { "type": "integer", "default": 0, "min": 0 },
     "quantityMode": {
@@ -25,12 +28,6 @@
       "relation": "manyToOne",
       "target": "api::supplier.supplier",
       "inversedBy": "items"
-    },
-    "purchaseRunItems": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::purchase-run-item.purchase-run-item",
-      "mappedBy": "item"
     }
   }
 }
