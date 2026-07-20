@@ -23,12 +23,6 @@
       "relation": "oneToMany",
       "target": "api::production-item.production-item",
       "mappedBy": "productionArea"
-    },
-    "productionRuns": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::production-run.production-run",
-      "mappedBy": "productionArea"
     }
   }
 }
