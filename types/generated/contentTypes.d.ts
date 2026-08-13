@@ -810,6 +810,8 @@ export interface ApiPurchaseItemPurchaseItem
   };
   attributes: {
     active: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    aliases: Schema.Attribute.JSON;
+    costHistory: Schema.Attribute.Component<'purchase.cost-history', true>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -819,7 +821,24 @@ export interface ApiPurchaseItemPurchaseItem
       'api::purchase-item.purchase-item'
     > &
       Schema.Attribute.Private;
+    merma: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 100;
+          min: 0;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<0>;
     name: Schema.Attribute.String & Schema.Attribute.Required;
+    packageQuantity: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<0>;
     presentation: Schema.Attribute.String & Schema.Attribute.Required;
     productionQty: Schema.Attribute.Integer &
       Schema.Attribute.Required &

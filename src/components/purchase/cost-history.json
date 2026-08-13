@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_purchase_cost_histories",
+  "info": {
+    "displayName": "Historial de costo",
+    "description": "Registro de un costo de compra y la fecha en que aplicó."
+  },
+  "options": {},
+  "attributes": {
+    "cost": {
+      "type": "decimal",
+      "required": true,
+      "min": 0
+    },
+    "date": {
+      "type": "date",
+      "required": true
+    }
+  }
+}

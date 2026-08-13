@@ -11,7 +11,15 @@
   "attributes": {
     "name": { "type": "string", "required": true },
     "presentation": { "type": "string", "required": true },
+    "aliases": { "type": "json" },
+    "packageQuantity": { "type": "decimal", "default": 0, "min": 0 },
     "unitCost": { "type": "decimal", "default": 0, "min": 0 },
+    "merma": { "type": "decimal", "default": 0, "min": 0, "max": 100 },
+    "costHistory": {
+      "type": "component",
+      "component": "purchase.cost-history",
+      "repeatable": true
+    },
     "serviceQty": { "type": "integer", "required": true, "default": 0, "min": 0 },
     "productionQty": { "type": "integer", "required": true, "default": 0, "min": 0 },
     "purchased": { "type": "boolean", "default": false },
