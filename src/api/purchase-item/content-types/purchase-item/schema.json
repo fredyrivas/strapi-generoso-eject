@@ -24,6 +24,7 @@
     "productionQty": { "type": "integer", "required": true, "default": 0, "min": 0 },
     "purchased": { "type": "boolean", "default": false },
     "active": { "type": "boolean", "default": true },
+    "enabledCosting": { "type": "boolean" },
     "sortOrder": { "type": "integer", "default": 0, "min": 0 },
     "quantityMode": {
       "type": "enumeration",
