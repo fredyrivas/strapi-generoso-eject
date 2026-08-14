@@ -1,0 +1,69 @@
+{
+  "kind": "collectionType",
+  "collectionName": "recetas",
+  "info": {
+    "singularName": "receta",
+    "pluralName": "recetas",
+    "displayName": "Receta",
+    "description": "Recetas, rendimientos, ingredientes y pasos de preparación."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "categoria": {
+      "type": "enumeration",
+      "enum": [
+        "Linea fría",
+        "Linea caliente",
+        "Panadería",
+        "Desayunos",
+        "Sandwiches",
+        "Cafetería",
+        "Bebidas"
+      ],
+      "required": true
+    },
+    "rendimiento": {
+      "type": "decimal",
+      "min": 0
+    },
+    "merma": {
+      "type": "decimal",
+      "min": 0
+    },
+    "tamanoRacionG": {
+      "type": "decimal",
+      "min": 0
+    },
+    "numeroRaciones": {
+      "type": "string"
+    },
+    "tiempoPreparacion": {
+      "type": "decimal",
+      "min": 0
+    },
+    "tiempoCoccion": {
+      "type": "decimal",
+      "min": 0
+    },
+    "cantidadMinima": {
+      "type": "decimal",
+      "min": 0
+    },
+    "ingredientes": {
+      "type": "component",
+      "component": "receta.ingrediente",
+      "repeatable": true
+    },
+    "preparacion": {
+      "type": "component",
+      "component": "receta.paso-preparacion",
+      "repeatable": true
+    }
+  }
+}

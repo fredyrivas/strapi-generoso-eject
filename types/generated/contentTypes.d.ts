@@ -889,6 +889,92 @@ export interface ApiPurchaseItemPurchaseItem
   };
 }
 
+export interface ApiRecetaReceta extends Struct.CollectionTypeSchema {
+  collectionName: 'recetas';
+  info: {
+    description: 'Recetas, rendimientos, ingredientes y pasos de preparaci\u00F3n.';
+    displayName: 'Receta';
+    pluralName: 'recetas';
+    singularName: 'receta';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    cantidadMinima: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      >;
+    categoria: Schema.Attribute.Enumeration<
+      [
+        'Linea fr\u00EDa',
+        'Linea caliente',
+        'Panader\u00EDa',
+        'Desayunos',
+        'Sandwiches',
+        'Cafeter\u00EDa',
+        'Bebidas',
+      ]
+    > &
+      Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    ingredientes: Schema.Attribute.Component<'receta.ingrediente', true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::receta.receta'
+    > &
+      Schema.Attribute.Private;
+    merma: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      >;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    numeroRaciones: Schema.Attribute.String;
+    preparacion: Schema.Attribute.Component<'receta.paso-preparacion', true>;
+    publishedAt: Schema.Attribute.DateTime;
+    rendimiento: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      >;
+    tamanoRacionG: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      >;
+    tiempoCoccion: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      >;
+    tiempoPreparacion: Schema.Attribute.Decimal &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0;
+        },
+        number
+      >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiSandwichesSliderSandwichesSlider
   extends Struct.CollectionTypeSchema {
   collectionName: 'sandwiches_sliders';
@@ -1479,6 +1565,7 @@ declare module '@strapi/strapi' {
       'api::production-area.production-area': ApiProductionAreaProductionArea;
       'api::production-item.production-item': ApiProductionItemProductionItem;
       'api::purchase-item.purchase-item': ApiPurchaseItemPurchaseItem;
+      'api::receta.receta': ApiRecetaReceta;
       'api::sandwiches-slider.sandwiches-slider': ApiSandwichesSliderSandwichesSlider;
       'api::supplier.supplier': ApiSupplierSupplier;
       'plugin::content-releases.release': PluginContentReleasesRelease;

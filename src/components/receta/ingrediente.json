@@ -1,0 +1,26 @@
+{
+  "collectionName": "components_receta_ingredientes",
+  "info": {
+    "displayName": "Ingrediente",
+    "description": "Ingrediente y cantidad utilizados en una receta."
+  },
+  "options": {},
+  "attributes": {
+    "ingrediente": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::purchase-item.purchase-item",
+      "required": true
+    },
+    "cantidad": {
+      "type": "decimal",
+      "required": true,
+      "min": 0
+    },
+    "unidad": {
+      "type": "enumeration",
+      "enum": ["g", "ml", "pz"],
+      "required": true
+    }
+  }
+}

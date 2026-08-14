@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_receta_pasos_preparacion",
+  "info": {
+    "displayName": "Paso de preparación",
+    "description": "Paso individual del procedimiento de una receta."
+  },
+  "options": {},
+  "attributes": {
+    "paso": {
+      "type": "integer",
+      "required": true,
+      "min": 1
+    },
+    "descripcion": {
+      "type": "text",
+      "required": true
+    }
+  }
+}
