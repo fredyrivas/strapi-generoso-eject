@@ -13,6 +13,7 @@
     "frequency": { "type": "string", "required": true },
     "day": { "type": "string", "required": true },
     "active": { "type": "boolean", "default": true },
+    "showinCompras": { "type": "boolean" },
     "items": {
       "type": "relation",
       "relation": "oneToMany",
