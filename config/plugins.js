@@ -4,12 +4,6 @@ module.exports = ({ env }) => {
   process.env.AWS_SECRET_ACCESS_KEY = env("AWS_ACCESS_SECRET");
   process.env.AWS_REGION = env("AWS_REGION");
 
-  console.log('AWS CHECK:', {
-    key: env('AWS_ACCESS_KEY_ID'),
-    region: env('AWS_REGION'),
-    bucket: env('AWS_BUCKET'),
-  });
-
   return {
     "users-permissions": {
       config: { jwtSecret: env("JWT_SECRET") },
@@ -39,4 +33,3 @@ module.exports = ({ env }) => {
     },
   };
 };
-

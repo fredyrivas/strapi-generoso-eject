@@ -31,7 +31,7 @@ async function main() {
     `);
     const snapshot = {
       createdAt: new Date().toISOString(),
-      source: 'strapi-generoso-eject',
+      source: 'cms',
       tables: {},
     };
 

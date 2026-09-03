@@ -832,6 +832,10 @@ export interface ApiPurchaseItemPurchaseItem
       > &
       Schema.Attribute.DefaultTo<0>;
     name: Schema.Attribute.String & Schema.Attribute.Required;
+    notes: Schema.Attribute.Text &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 2000;
+      }>;
     packageQuantity: Schema.Attribute.Decimal &
       Schema.Attribute.SetMinMax<
         {
