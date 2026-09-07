@@ -10,7 +10,12 @@
   "options": { "draftAndPublish": false },
   "attributes": {
     "name": { "type": "string", "required": true },
-    "presentation": { "type": "string", "required": true },
+    "presentation": {
+      "type": "enumeration",
+      "enum": ["kg", "gr", "pz"],
+      "default": "kg",
+      "required": true
+    },
     "notes": { "type": "text", "maxLength": 2000 },
     "aliases": { "type": "json" },
     "packageQuantity": { "type": "decimal", "default": 0, "min": 0 },

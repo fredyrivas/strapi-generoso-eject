@@ -844,7 +844,9 @@ export interface ApiPurchaseItemPurchaseItem
         number
       > &
       Schema.Attribute.DefaultTo<0>;
-    presentation: Schema.Attribute.String & Schema.Attribute.Required;
+    presentation: Schema.Attribute.Enumeration<['kg', 'gr', 'pz']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'kg'>;
     productionQty: Schema.Attribute.Integer &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMax<
