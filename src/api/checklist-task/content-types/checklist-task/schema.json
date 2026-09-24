@@ -26,6 +26,9 @@
     "lastDone": {
       "type": "date"
     },
+    "completedOn": {
+      "type": "date"
+    },
     "alternatesShifts": {
       "type": "boolean",
       "default": false

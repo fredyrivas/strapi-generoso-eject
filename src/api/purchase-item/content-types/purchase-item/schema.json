@@ -26,8 +26,8 @@
       "component": "purchase.cost-history",
       "repeatable": true
     },
-    "serviceQty": { "type": "integer", "required": true, "default": 0, "min": 0 },
-    "productionQty": { "type": "integer", "required": true, "default": 0, "min": 0 },
+    "serviceQty": { "type": "decimal", "required": true, "default": 0, "min": 0 },
+    "productionQty": { "type": "decimal", "required": true, "default": 0, "min": 0 },
     "purchased": { "type": "boolean", "default": false },
     "active": { "type": "boolean", "default": true },
     "enabledCosting": { "type": "boolean" },

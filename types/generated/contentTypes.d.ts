@@ -461,6 +461,7 @@ export interface ApiChecklistTaskChecklistTask
   attributes: {
     alternatesShifts: Schema.Attribute.Boolean &
       Schema.Attribute.DefaultTo<false>;
+    completedOn: Schema.Attribute.Date;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -756,7 +757,7 @@ export interface ApiProductionItemProductionItem
   };
   attributes: {
     active: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
-    batchesToProduce: Schema.Attribute.Integer &
+    batchesToProduce: Schema.Attribute.Decimal &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMax<
         {
@@ -847,7 +848,7 @@ export interface ApiPurchaseItemPurchaseItem
     presentation: Schema.Attribute.Enumeration<['kg', 'gr', 'pz']> &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'kg'>;
-    productionQty: Schema.Attribute.Integer &
+    productionQty: Schema.Attribute.Decimal &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMax<
         {
@@ -863,7 +864,7 @@ export interface ApiPurchaseItemPurchaseItem
     > &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'both'>;
-    serviceQty: Schema.Attribute.Integer &
+    serviceQty: Schema.Attribute.Decimal &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMax<
         {

@@ -11,7 +11,7 @@
   "attributes": {
     "name": { "type": "string", "required": true },
     "defaultBatchSize": { "type": "string", "required": true },
-    "batchesToProduce": { "type": "integer", "required": true, "default": 0, "min": 0 },
+    "batchesToProduce": { "type": "decimal", "required": true, "default": 0, "min": 0 },
     "completed": { "type": "boolean", "default": false },
     "sortOrder": { "type": "integer", "default": 0, "min": 0 },
     "active": { "type": "boolean", "default": true },

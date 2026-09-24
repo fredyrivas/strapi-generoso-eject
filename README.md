@@ -40,4 +40,6 @@ When developing locally this Strapi template will connect to the Postgres server
 
 El módulo usa únicamente el collection type `checklist-task`. Cada registro guarda su propia fecha, turno y estado (`taskStatus`); no existen ejecuciones ni relaciones auxiliares.
 
+`completedOn` es una fecha opcional que registra cuándo se marcó terminada una tarea por intervalo (zona `America/Mexico_City`). El frontend agenda desde esa fecha y ajusta la programación desde la revisión cuando esta ocurre dos o más días calendario después. Desplegar este esquema antes del frontend; Strapi sincroniza el campo nuevo al arrancar. Los registros existentes pueden conservarlo vacío: al revisarlos, el frontend agenda desde la revisión sin inferir cuándo se terminaron.
+
 La migración `database/migrations/202607200002-reset-daily-checklist.js` elimina intencionalmente las tablas y datos del Daily Checklist anterior. Al iniciar Strapi, se crea la colección nueva vacía.
