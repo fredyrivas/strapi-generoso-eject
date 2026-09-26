@@ -489,6 +489,9 @@ export interface ApiChecklistTaskChecklistTask
     >;
     publishedAt: Schema.Attribute.DateTime;
     scheduledFor: Schema.Attribute.Date & Schema.Attribute.Required;
+    taskCategory: Schema.Attribute.Enumeration<
+      ['Limpieza y operativas', 'Listas de compras', 'Operativa']
+    >;
     taskStatus: Schema.Attribute.Enumeration<
       [
         'vencida',

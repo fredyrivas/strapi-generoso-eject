@@ -15,6 +15,14 @@
       "type": "string",
       "required": true
     },
+    "taskCategory": {
+      "type": "enumeration",
+      "enum": [
+        "Limpieza y operativas",
+        "Listas de compras",
+        "Operativa"
+      ]
+    },
     "scheduledFor": {
       "type": "date",
       "required": true
