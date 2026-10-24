@@ -8,6 +8,7 @@ module.exports = [
         useDefaults: true,
         directives: {
           'img-src': ["'self'", "data:", "blob:", "https://website-generoso.s3.us-east-1.amazonaws.com"],
+          'media-src': ["'self'", "blob:", "https://website-generoso.s3.us-east-1.amazonaws.com"],
         },
       },
     },

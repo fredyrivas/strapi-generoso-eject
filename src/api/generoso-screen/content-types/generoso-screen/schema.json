@@ -5,7 +5,7 @@
     "singularName": "generoso-screen",
     "pluralName": "generoso-screens",
     "displayName": "generoso-screen",
-    "description": ""
+    "description": "Promociones de pantalla: imágenes y videos. duration controla los segundos de las imágenes; los videos se reproducen completos y sin sonido."
   },
   "options": {
     "draftAndPublish": true
@@ -17,9 +17,7 @@
       "required": false,
       "allowedTypes": [
         "images",
-        "files",
-        "videos",
-        "audios"
+        "videos"
       ]
     },
     "visible": {

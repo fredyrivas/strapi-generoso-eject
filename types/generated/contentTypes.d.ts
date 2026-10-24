@@ -558,7 +558,7 @@ export interface ApiGenerosoScreenGenerosoScreen
   extends Struct.CollectionTypeSchema {
   collectionName: 'generoso_screens';
   info: {
-    description: '';
+    description: 'Promociones de pantalla: im\u00E1genes y videos. duration controla los segundos de las im\u00E1genes; los videos se reproducen completos y sin sonido.';
     displayName: 'generoso-screen';
     pluralName: 'generoso-screens';
     singularName: 'generoso-screen';
@@ -571,7 +571,7 @@ export interface ApiGenerosoScreenGenerosoScreen
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     duration: Schema.Attribute.Decimal;
-    image: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    image: Schema.Attribute.Media<'images' | 'videos'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
