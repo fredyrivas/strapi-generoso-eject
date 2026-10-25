@@ -36,6 +36,14 @@ When developing locally this Strapi template will connect to the Postgres server
 - After your app is deployed, visit the `/admin` endpoint to create your admin user.
 - If you want to use npm with this project make sure you delete the `yarn.lock` file after you have ran `npm install`
 
+## Ordenar contenido
+
+Sortable Entries permite ordenar arrastrando desde el botón junto a la configuración de cada colección. Reordena las entradas en el modal y pulsa **Submit** para guardar. Las entradas nuevas se añaden al final automáticamente.
+
+Está habilitado en pantallas, sliders, categorías, productos, compras y producción. `sortOrder` se administra automáticamente y se oculta del formulario. En las colecciones antiguas, PostgreSQL mantiene `order` sincronizado para conservar la compatibilidad con las API y los sitios existentes. El orden se actualiza en borradores y publicaciones sin publicar otros cambios pendientes.
+
+La migración `202610250001-add-sortable-entries.js` copia las posiciones existentes. El primer arranque configura las listas para ordenarlas por `sortOrder`; los cambios posteriores de configuración se respetan. Las pantallas se identifican por `name`; si está vacío, y en los sliders, se usa el nombre del archivo en el modal.
+
 ## Daily Checklist
 
 El módulo usa únicamente el collection type `checklist-task`. Cada registro guarda su propia fecha, turno y estado (`taskStatus`); no existen ejecuciones ni relaciones auxiliares.

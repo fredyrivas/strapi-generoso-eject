@@ -35,6 +35,9 @@
     "order": {
       "type": "integer"
     },
+    "sortOrder": {
+      "type": "integer"
+    },
     "menu_category": {
       "type": "relation",
       "relation": "oneToOne",

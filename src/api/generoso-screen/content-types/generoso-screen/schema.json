@@ -11,6 +11,9 @@
     "draftAndPublish": true
   },
   "attributes": {
+    "name": {
+      "type": "string"
+    },
     "image": {
       "type": "media",
       "multiple": false,
@@ -24,6 +27,9 @@
       "type": "boolean"
     },
     "order": {
+      "type": "integer"
+    },
+    "sortOrder": {
       "type": "integer"
     },
     "duration": {

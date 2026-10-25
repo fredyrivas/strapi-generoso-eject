@@ -20,6 +20,9 @@
     "order": {
       "type": "integer"
     },
+    "sortOrder": {
+      "type": "integer"
+    },
     "image": {
       "type": "media",
       "multiple": false,

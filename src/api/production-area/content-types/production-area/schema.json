@@ -16,7 +16,7 @@
       "required": true,
       "default": "gold"
     },
-    "sortOrder": { "type": "integer", "default": 0, "min": 0 },
+    "sortOrder": { "type": "integer", "min": 0 },
     "active": { "type": "boolean", "default": true },
     "productionItems": {
       "type": "relation",

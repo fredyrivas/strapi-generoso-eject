@@ -13,7 +13,7 @@
     "defaultBatchSize": { "type": "string", "required": true },
     "batchesToProduce": { "type": "decimal", "required": true, "default": 0, "min": 0 },
     "completed": { "type": "boolean", "default": false },
-    "sortOrder": { "type": "integer", "default": 0, "min": 0 },
+    "sortOrder": { "type": "integer", "min": 0 },
     "active": { "type": "boolean", "default": true },
     "productionArea": {
       "type": "relation",

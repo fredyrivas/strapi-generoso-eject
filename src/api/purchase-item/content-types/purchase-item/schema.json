@@ -31,7 +31,7 @@
     "purchased": { "type": "boolean", "default": false },
     "active": { "type": "boolean", "default": true },
     "enabledCosting": { "type": "boolean" },
-    "sortOrder": { "type": "integer", "default": 0, "min": 0 },
+    "sortOrder": { "type": "integer", "min": 0 },
     "quantityMode": {
       "type": "enumeration",
       "enum": ["service", "production", "both"],

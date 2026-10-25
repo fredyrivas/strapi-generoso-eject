@@ -5,6 +5,9 @@ module.exports = ({ env }) => {
   process.env.AWS_REGION = env("AWS_REGION");
 
   return {
+    "sortable-entries": {
+      enabled: true,
+    },
     "users-permissions": {
       config: { jwtSecret: env("JWT_SECRET") },
     },

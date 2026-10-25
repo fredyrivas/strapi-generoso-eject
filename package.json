@@ -15,19 +15,20 @@
     "upgrade:dry": "npx @strapi/upgrade latest --dry"
   },
   "dependencies": {
-    "@strapi/plugin-users-permissions": "5.11.0",
-    "@strapi/provider-upload-aws-s3": "^5.16.1",
-    "@strapi/provider-upload-cloudinary": "^5.12.1",
-    "@strapi/provider-upload-local": "5.11.0",
-    "@strapi/strapi": "5.11.0",
+    "@strapi/plugin-users-permissions": "5.59.0",
+    "@strapi/provider-upload-aws-s3": "5.59.0",
+    "@strapi/provider-upload-cloudinary": "5.59.0",
+    "@strapi/provider-upload-local": "5.59.0",
+    "@strapi/strapi": "5.59.0",
     "pg": "8.8.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.0.0",
-    "styled-components": "^6.0.0"
+    "strapi-plugin-sortable-entries": "1.4.2",
+    "styled-components": "6.1.19"
   },
   "engines": {
-    "node": ">=18.0.0 <=22.x",
+    "node": ">=20.0.0 <=26.x.x",
     "npm": ">=6.0.0"
   },
   "strapi": {
