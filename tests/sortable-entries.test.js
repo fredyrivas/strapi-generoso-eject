@@ -59,7 +59,16 @@ test('initial setup preserves other view settings and does not override later ed
     layouts: { edit: [[{ name: 'name' }, { name: 'order' }], [{ name: 'sortOrder' }]], list: ['name', 'order'] },
   };
   const strapi = {
-    store: () => ({ get: async () => configured, set: async () => { configured = true; } }),
+    documents: () => ({ findMany: async () => [] }),
+    service: () => ({ purge: async () => ({ deleted: 0 }) }),
+    cron: { add: () => {} },
+    store: ({ name }) => name === 'users-permissions'
+      ? { get: async () => ({ allow_register: false }) }
+      : { get: async () => configured, set: async () => { configured = true; } },
+    db: {
+      transaction: async (operation) => operation({ trx: { raw: async () => {} } }),
+      query: () => ({ findOne: async () => ({ type: 'teamemployee' }) }),
+    },
     contentTypes: { product: {
       uid: 'api::product.product',
       attributes: { name: { type: 'string' }, order: { type: 'integer' }, sortOrder: { type: 'integer' } },

@@ -489,6 +489,14 @@ export interface ApiCheckinCheckin extends Struct.CollectionTypeSchema {
   options: {
     draftAndPublish: true;
   };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
   attributes: {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -1134,6 +1142,151 @@ export interface ApiSupplierSupplier extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiTeamCheckinTeamCheckin extends Struct.CollectionTypeSchema {
+  collectionName: 'team_checkins';
+  info: {
+    displayName: 'Asistencia vigente de Team';
+    pluralName: 'team-checkins';
+    singularName: 'team-checkin';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    date: Schema.Attribute.Date & Schema.Attribute.Required;
+    dayKey: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 180;
+      }>;
+    employee: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::team-employee.team-employee'
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::team-checkin.team-checkin'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    punctual: Schema.Attribute.Boolean & Schema.Attribute.Required;
+    timestamp: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiTeamEmployeeTeamEmployee
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'team_employees';
+  info: {
+    description: 'Perfil vigente del empleado, vinculado a una cuenta de Users & Permissions.';
+    displayName: 'Empleado de Team';
+    pluralName: 'team-employees';
+    singularName: 'team-employee';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: false;
+    };
+  };
+  attributes: {
+    account: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::users-permissions.user'
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+    activationExpiresAt: Schema.Attribute.DateTime & Schema.Attribute.Private;
+    activationTokenHash: Schema.Attribute.String &
+      Schema.Attribute.Private &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 64;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    fullName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 180;
+        minLength: 2;
+      }>;
+    invitationAccepted: Schema.Attribute.Boolean &
+      Schema.Attribute.Private &
+      Schema.Attribute.DefaultTo<false>;
+    invitationCancelled: Schema.Attribute.Boolean &
+      Schema.Attribute.Private &
+      Schema.Attribute.DefaultTo<false>;
+    invitationExpiresAt: Schema.Attribute.DateTime & Schema.Attribute.Private;
+    invitationTokenHash: Schema.Attribute.String &
+      Schema.Attribute.Private &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 64;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::team-employee.team-employee'
+    > &
+      Schema.Attribute.Private;
+    personalTokenHash: Schema.Attribute.String &
+      Schema.Attribute.Private &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 64;
+      }>;
+    phone: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 16;
+      }>;
+    position: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+        minLength: 2;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    startDate: Schema.Attribute.Date & Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<['invited', 'active', 'inactive']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'invited'>;
+    teamRole: Schema.Attribute.Enumeration<['employee', 'admin']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'employee'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface PluginContentReleasesRelease
   extends Struct.CollectionTypeSchema {
   collectionName: 'strapi_releases';
@@ -1659,6 +1812,8 @@ declare module '@strapi/strapi' {
       'api::receta.receta': ApiRecetaReceta;
       'api::sandwiches-slider.sandwiches-slider': ApiSandwichesSliderSandwichesSlider;
       'api::supplier.supplier': ApiSupplierSupplier;
+      'api::team-checkin.team-checkin': ApiTeamCheckinTeamCheckin;
+      'api::team-employee.team-employee': ApiTeamEmployeeTeamEmployee;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

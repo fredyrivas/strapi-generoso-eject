@@ -1,9 +1,3 @@
 'use strict';
-
-/**
- * checkin router
- */
-
-const { createCoreRouter } = require('@strapi/strapi').factories;
-
-module.exports = createCoreRouter('api::checkin.checkin');
+// Legacy writes cannot bypass identity, geolocation, hours or weekly retention.
+module.exports = { routes: [] };

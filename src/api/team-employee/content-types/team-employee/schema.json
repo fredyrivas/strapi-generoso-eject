@@ -1,0 +1,48 @@
+{
+  "kind": "collectionType",
+  "collectionName": "team_employees",
+  "info": {
+    "singularName": "team-employee",
+    "pluralName": "team-employees",
+    "displayName": "Empleado de Team",
+    "description": "Perfil vigente del empleado, vinculado a una cuenta de Users & Permissions."
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {
+    "i18n": { "localized": false },
+    "content-manager": { "visible": false },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "fullName": { "type": "string", "required": true, "minLength": 2, "maxLength": 180 },
+    "startDate": { "type": "date", "required": true },
+    "phone": { "type": "string", "required": true, "regex": "^\\+[1-9][0-9]{7,14}$", "maxLength": 16 },
+    "position": { "type": "string", "required": true, "minLength": 2, "maxLength": 100 },
+    "status": {
+      "type": "enumeration",
+      "enum": ["invited", "active", "inactive"],
+      "required": true,
+      "default": "invited"
+    },
+    "teamRole": {
+      "type": "enumeration",
+      "enum": ["employee", "admin"],
+      "required": true,
+      "default": "employee"
+    },
+    "invitationTokenHash": { "type": "string", "maxLength": 64, "private": true, "searchable": false },
+    "invitationExpiresAt": { "type": "datetime", "private": true },
+    "invitationCancelled": { "type": "boolean", "private": true, "default": false },
+    "invitationAccepted": { "type": "boolean", "private": true, "default": false },
+    "activationTokenHash": { "type": "string", "maxLength": 64, "private": true, "searchable": false },
+    "activationExpiresAt": { "type": "datetime", "private": true },
+    "personalTokenHash": { "type": "string", "maxLength": 64, "private": true, "searchable": false, "unique": true },
+    "account": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user",
+      "required": true,
+      "private": true
+    }
+  }
+}
