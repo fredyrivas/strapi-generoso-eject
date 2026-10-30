@@ -79,8 +79,9 @@ test('weekly reads exclude past/future weeks and other employees and never infer
   const h = harness(); h.state.records.push({ employee: 'employee-1', date: '2026-10-20', timestamp: h.now.toISOString(), punctual: true }, { employee: 'other', date: '2026-10-28', timestamp: h.now.toISOString(), punctual: false }, { employee: 'employee-1', date: '2026-11-02', timestamp: h.now.toISOString(), punctual: true });
   const result = await h.service.welcomeForAccount(h.account.id); assert.equal(result.week.days[2].status, 'no_record'); assert.equal(result.week.days[3].status, 'upcoming'); assert.ok(result.week.days.every(day => day.timestamp === null));
 });
-test('retention runs at bootstrap and every minute in the business timezone', async () => {
-  let count = 0, tasks; const strapi = { service: () => ({ purge: async () => { count++; } }), cron: { add: input => { tasks = input; } } }; await configure(strapi); assert.equal(count, 1); assert.deepEqual(tasks.teamCurrentWeekAttendance.options, { rule: '0 * * * * *', tz: 'America/Mexico_City' }); await tasks.teamCurrentWeekAttendance.task(); assert.equal(count, 2);
+test('bootstrap preserves attendance history and never schedules automatic deletion', async () => {
+  const strapi = { service: () => { assert.fail('Bootstrap must not access the purge service'); }, cron: { add: () => { assert.fail('Bootstrap must not schedule attendance deletion'); } } };
+  await configure(strapi);
 });
 test('attendance model has no publication versions or generic routes and enforces one key per employee/day', () => {
   assert.equal(schema.options.draftAndPublish, false); assert.equal(schema.attributes.dayKey.unique, true); assert.equal(schema.attributes.employee.private, true); assert.equal(schema.attributes.employee.required, true);
