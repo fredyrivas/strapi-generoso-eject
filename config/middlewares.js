@@ -16,7 +16,13 @@ module.exports = [
   'strapi::cors',
   'strapi::poweredBy',
   'strapi::query',
-  'strapi::body',
+  {
+    name: 'strapi::body',
+    config: {
+      // Account deletion requires an explicit confirmation in the JSON body.
+      parsedMethods: ['POST', 'PUT', 'PATCH', 'DELETE'],
+    },
+  },
   'strapi::session',
   'strapi::favicon',
   'strapi::public',

@@ -4,8 +4,29 @@ const test = require('node:test');
 const factory = require('../src/api/team-employee/services/team-deletion');
 const router = require('../src/api/team-employee/routes/deletions');
 const { LOCK } = require('../src/api/team-employee/utils/attendance');
+const { Readable } = require('node:stream');
+const Koa = require('koa');
+const { koaBody } = require('koa-body');
+const middlewares = require('../config/middlewares');
 const E = 'api::team-employee.team-employee', U = 'plugin::users-permissions.user', A = 'api::team-checkin.team-checkin', OLD = 'api::checkin.checkin';
 const confirmation = { confirmed: true, confirmationEmail: 'person@example.test', legacyDocumentIds: [] };
+
+test('configured body parser preserves the deletion confirmation and existing write methods', async () => {
+  const bodyConfig = middlewares.find(entry => entry === 'strapi::body' || entry.name === 'strapi::body');
+  const parse = koaBody(typeof bodyConfig === 'string' ? {} : bodyConfig.config);
+  const app = new Koa();
+  for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+    const payload = Buffer.from(JSON.stringify(confirmation));
+    const req = Readable.from([payload]);
+    req.method = method; req.url = '/api/team-admin/employees/person-2';
+    req.headers = { 'content-type': 'application/json', 'content-length': String(payload.length) };
+    const ctx = app.createContext(req, {});
+    await parse(ctx, async () => {
+      assert.deepEqual(ctx.request.body, confirmation, `${method} confirmation must reach the service`);
+      assert.deepEqual(factory.deletionInput(ctx.request.body), { confirmationEmail: confirmation.confirmationEmail, legacyDocumentIds: [] });
+    });
+  }
+});
 
 function harness(options = {}) {
   const state = {
