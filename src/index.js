@@ -1,5 +1,9 @@
 'use strict';
 
+const configureTeam = require('./team-config');
+const configureAttendance = require('./team-attendance-config');
+const configureOnboarding = require('./team-onboarding-config');
+
 module.exports = {
   /**
    * An asynchronous register function that runs before
@@ -10,6 +14,9 @@ module.exports = {
   register(/*{ strapi }*/) {},
 
   async bootstrap({ strapi }) {
+    await configureTeam(strapi);
+    await configureOnboarding(strapi);
+    await configureAttendance(strapi);
     const store = strapi.store({ type: 'plugin', name: 'sortable-entries' });
     const key = 'configured-content-manager-v1';
     if (await store.get({ key })) return;

@@ -1,0 +1,15 @@
+{
+  "kind": "collectionType",
+  "collectionName": "team_checkins",
+  "info": { "singularName": "team-checkin", "pluralName": "team-checkins", "displayName": "Team Check-in" },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } },
+  "attributes": {
+    "employee": { "type": "relation", "relation": "manyToOne", "target": "api::team-employee.team-employee", "required": true, "private": true },
+    "dayKey": { "type": "string", "required": true, "unique": true, "private": true, "maxLength": 180 },
+    "date": { "type": "date", "required": true },
+    "timestamp": { "type": "datetime", "required": true },
+    "kind": { "type": "enumeration", "enum": ["normal", "sick"], "default": "normal", "private": true },
+    "punctual": { "type": "boolean", "required": true }
+  }
+}
