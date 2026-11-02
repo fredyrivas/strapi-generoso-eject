@@ -110,13 +110,12 @@ function calculateBaseSalariesRows(records = []) {
         return { dayIndex, input, ...calculateBaseSalariesDay(input) };
     });
     const sum = (field) => {
-        let total = 0;
+        let total = null;
         for (const day of days) {
             const value = day.values[field];
-            // An incomplete column must not appear as a complete, understated total.
-            if (value === null)
-                return null;
-            total += value;
+            // Pending days are skipped so the total shows progress; it stays null only when no day has a value.
+            if (value !== null)
+                total = (total ?? 0) + value;
         }
         return total;
     };

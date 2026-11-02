@@ -10,6 +10,17 @@ const conflict = message => new ApplicationError(message, { code: 'TEAM_CONFLICT
 const ATTENDANCE_FIELDS = ['date', 'timestamp', 'punctual', 'kind'];
 const attendanceDto = row => ({ date: row.date, timestamp: new Date(row.timestamp).toISOString(), kind: attendanceKind(row.kind), punctual: attendanceKind(row.kind) === 'normal' && punctualAt(new Date(row.timestamp)) });
 const accountBinding = (id, documentId) => createHash('sha256').update('team-account:' + id + ':' + documentId).digest('hex');
+// Administrative arrivals use fixed Mexico City times on either side of the punctuality limit.
+const ADMIN_ARRIVALS = { on_time: { hour: 8, kind: 'normal', punctual: true }, late: { hour: 9, kind: 'normal', punctual: false }, sick: { hour: 8, kind: 'sick', punctual: false } };
+const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(value + 'T12:00:00Z').toISOString().slice(0, 10) === value;
+function adminArrival(date, status) {
+  const arrival = ADMIN_ARRIVALS[status];
+  // Mexico City has no daylight saving time (UTC-6); the checks below reject any other offset.
+  const timestamp = new Date(date + 'T' + String(arrival.hour + 6).padStart(2, '0') + ':00:00Z');
+  const local = localClock(timestamp);
+  if (local.date !== date || local.seconds !== arrival.hour * 3600 || punctualAt(timestamp) !== (status !== 'late')) throw new ApplicationError('No se pudo calcular la hora local del registro.');
+  return { timestamp: timestamp.toISOString(), kind: arrival.kind, punctual: arrival.punctual };
+}
 const requireAttendance = entry => {
   if (entry.teamRole === 'operative') throw new ForbiddenError('El rol Operativo no tiene habilitado el check-in.');
 };
@@ -75,6 +86,28 @@ module.exports = ({ strapi, clock = () => new Date() }) => {
         if (existing) return { status: 'already_registered', checkin: attendanceDto(existing) };
         const saved = await strapi.documents(A).create({ data: { employee: entry.documentId, dayKey, date, timestamp: received.toISOString(), kind: 'sick', punctual: false }, fields: ATTENDANCE_FIELDS });
         return { status: 'recorded', checkin: attendanceDto(saved) };
+      });
+    },
+    async adminRecord(documentId, date, input) {
+      if (typeof documentId !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(documentId)) throw new ValidationError('La persona seleccionada no es válida.');
+      if (!validDate(date)) throw new ValidationError('La fecha debe tener formato AAAA-MM-DD.');
+      if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).join() !== 'status' || !Object.hasOwn(ADMIN_ARRIVALS, input.status)) throw new ValidationError('El registro solo acepta puntual, con retraso o enfermedad.');
+      if (date > localClock(clock()).date) throw new ValidationError('No se puede registrar asistencia en días futuros.');
+      const arrival = adminArrival(date, input.status);
+      return strapi.db.transaction(async ({ trx }) => {
+        await trx.raw('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', [LOCK]);
+        const row = await strapi.db.connection(strapi.db.metadata.get(E).tableName).transacting(trx).select('id').where({ document_id: documentId }).forUpdate().first();
+        const entry = row && await strapi.documents(E).findOne({ documentId, fields: ['documentId', 'teamRole', 'paymentAccount'] });
+        if (!entry) throw new NotFoundError('La persona seleccionada no existe.');
+        requireAttendance(entry);
+        // restDay uses Monday = 0, like the payment rules.
+        if (entry.paymentAccount?.restDay === (new Date(date + 'T12:00:00Z').getUTCDay() + 6) % 7) throw new ValidationError('Ese día es el descanso de la persona y no admite registro de asistencia.');
+        const dayKey = entry.documentId + ':' + date;
+        const existing = await strapi.documents(A).findFirst({ filters: { dayKey }, fields: ['documentId', ...ATTENDANCE_FIELDS] });
+        const saved = existing
+          ? await strapi.documents(A).update({ documentId: existing.documentId, data: arrival, fields: ATTENDANCE_FIELDS })
+          : await strapi.documents(A).create({ data: { employee: entry.documentId, dayKey, date, ...arrival }, fields: ATTENDANCE_FIELDS });
+        return { status: existing ? 'updated' : 'recorded', checkin: attendanceDto(saved) };
       });
     },
     async adminWeek(rawPage = '1') {

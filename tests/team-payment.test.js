@@ -97,7 +97,7 @@ test('an unconfigured payment account has no invented salary, rest day or group 
   const h = harness();
   const data = await h.service.readForEmployee('employee-2', 1);
   assert.equal(data.configured, false);
-  assert.deepEqual(data.payment, { revision: 0, monthlySalary: null, restDay: null, payGroup: null, consumptions: [], extraPay: 0, cash: 0 });
+  assert.deepEqual(data.payment, { revision: 0, monthlySalary: null, restDay: null, payGroup: null, consumptions: [], extraPay: 0, cash: 0, cancellations: { tips: null, shiftBonus: null, punctualityBonus: null } });
   assert.equal(h.state.employees[0].paymentAccount, undefined);
   assert.equal(h.state.updates.length, 0);
 });
@@ -125,7 +125,7 @@ test('consumptions and adjustments replace current values without weekly records
   assert.deepEqual(saved.payment.consumptions, [{ concept: 'Café', amount: 20 }]);
   assert.equal(saved.payment.extraPay, 0);
   assert.equal(saved.payment.revision, 2);
-  assert.deepEqual(Object.keys(h.state.employees[0].paymentAccount).sort(), ['cash', 'consumptions', 'extraPay', 'monthlySalary', 'payGroup', 'restDay', 'revision']);
+  assert.deepEqual(Object.keys(h.state.employees[0].paymentAccount).sort(), ['cancellations', 'cash', 'consumptions', 'extraPay', 'monthlySalary', 'payGroup', 'restDay', 'revision']);
 });
 
 test('each active account can read only its linked current settings', async () => {

@@ -51,7 +51,7 @@ module.exports = ({ strapi }) => {
         throw new ApplicationError('Revisa los datos de asistencia y de la cuenta del empleado.');
       }
       // Only this employee's calculated shares leave the service, never the base inputs.
-      return { ...metadata, status: calculation.status, calculation, adjustments: calculateEmployeePaymentAdjustments(calculation.subtotal, account.payment) };
+      return { ...metadata, status: calculation.status, calculation, adjustments: calculateEmployeePaymentAdjustments(calculation.subtotal, account.payment, calculation) };
     });
   }
   return {

@@ -1,6 +1,7 @@
 'use strict';
 const { errors: { ValidationError } } = require('@strapi/utils');
-const FIELDS = ['monthlySalary', 'restDay', 'payGroup', 'consumptions', 'extraPay', 'cash'];
+const { noPaymentCancellations, paymentCancellations } = require('./payment-calculation/employee-payment-adjustments');
+const FIELDS = ['monthlySalary', 'restDay', 'payGroup', 'consumptions', 'extraPay', 'cash', 'cancellations'];
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const exactKeys = (value, keys) => Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 
@@ -26,6 +27,9 @@ function fieldValue(field, value) {
       return { concept: item.concept.trim(), amount: money(item.amount) };
     });
   }
+  if (field === 'cancellations') {
+    try { return paymentCancellations(value); } catch { throw new ValidationError('Cada cancelación debe indicar No aplica, Penalización o ninguna.'); }
+  }
   return money(value);
 }
 
@@ -35,7 +39,9 @@ function revision(value) {
 }
 
 function paymentAccount(value) {
-  if (value == null) return { revision: 0, monthlySalary: null, restDay: null, payGroup: null, consumptions: [], extraPay: 0, cash: 0 };
+  if (value == null) return { revision: 0, monthlySalary: null, restDay: null, payGroup: null, consumptions: [], extraPay: 0, cash: 0, cancellations: noPaymentCancellations() };
+  // Accounts saved before cancellations existed omit them and keep every concept.
+  if (object(value) && !Object.hasOwn(value, 'cancellations')) value = { ...value, cancellations: noPaymentCancellations() };
   if (!object(value) || !exactKeys(value, ['revision', ...FIELDS])) throw new ValidationError('Los datos guardados de la cuenta requieren revisión.');
   return { revision: revision(value.revision), ...Object.fromEntries(FIELDS.map(field => [field, fieldValue(field, value[field])])) };
 }

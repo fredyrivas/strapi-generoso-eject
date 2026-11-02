@@ -22,6 +22,7 @@ function harness(options = {}) {
     } : {
       findFirst: async ({ filters }) => state.records.find(row => row.dayKey === filters.dayKey),
       findMany: async ({ filters }) => state.records.filter(row => row.employee === filters.employee.documentId && row.date >= filters.date.$gte && row.date < filters.date.$lt),
+      update: async ({ documentId, data }) => { const row = state.records.find(entry => entry.documentId === documentId); Object.assign(row, data); return { ...row }; },
       create: async ({ data }) => { assert.deepEqual(Object.keys(data).sort(), ['date', 'dayKey', 'employee', 'kind', 'punctual', 'timestamp']); const row = { ...data, documentId: 'arrival-' + state.records.length }; state.records.push(row); if (options.failCreate) throw new Error('controlled-create-failure'); return row; },
     },
     db: {
@@ -128,7 +129,7 @@ test('attendance model has no publication versions or generic routes and enforce
 });
 test('all employee attendance endpoints require a member session and admin endpoints keep their separate policy', () => {
   const routes = router({ strapi: {} }).routes;
-  assert.deepEqual(routes.map(route => route.path), ['/team/welcome', '/team/checkin', '/team/sick', '/team-admin/checkins']);
+  assert.deepEqual(routes.map(route => route.path), ['/team/welcome', '/team/checkin', '/team/sick', '/team-admin/checkins', '/team-admin/employees/:documentId/checkins/:date']);
   for (const [index, route] of routes.entries()) {
     assert.equal(typeof route.handler, 'function');
     assert.deepEqual(route.config.auth, { strategies: ['users-permissions'], scope: [] });
@@ -230,4 +231,35 @@ test('illness controller forwards the session identity and applies private respo
     assert.deepEqual(ctx.body, { status: 'recorded' });
     assert.equal(headers['Cache-Control'], 'no-store'); assert.equal(headers['Referrer-Policy'], 'no-referrer');
   } finally { global.strapi = previous; }
+});
+test('administrators record punctual, late or illness arrivals for past days and replace the day record', async () => {
+  const h = harness();
+  const first = await h.service.adminRecord('employee-1', '2026-10-26', { status: 'late' });
+  assert.equal(first.status, 'recorded');
+  assert.deepEqual(first.checkin, { date: '2026-10-26', timestamp: '2026-10-26T15:00:00.000Z', kind: 'normal', punctual: false });
+  assert.equal(h.state.records[0].dayKey, 'employee-1:2026-10-26');
+  const changed = await h.service.adminRecord('employee-1', '2026-10-26', { status: 'sick' });
+  assert.equal(changed.status, 'updated');
+  assert.deepEqual(changed.checkin, { date: '2026-10-26', timestamp: '2026-10-26T14:00:00.000Z', kind: 'sick', punctual: false });
+  assert.equal(h.state.records.length, 1);
+  const today = await h.service.adminRecord('employee-1', '2026-10-28', { status: 'on_time' });
+  assert.deepEqual(today.checkin, { date: '2026-10-28', timestamp: '2026-10-28T14:00:00.000Z', kind: 'normal', punctual: true });
+  const week = await h.service.welcomeForAccount(h.account.id);
+  assert.deepEqual(week.week.days.slice(0, 3).map(day => day.status), ['sick', 'no_record', 'on_time']);
+});
+test('administrative arrivals reject future days, invalid input, missing people and operative accounts', async () => {
+  const h = harness();
+  for (const [documentId, date, input] of [['employee-1', '2026-10-29', { status: 'on_time' }], ['employee-1', '2026-02-30', { status: 'on_time' }], ['employee-1', '28/10/2026', { status: 'on_time' }],
+    ['employee-1', '2026-10-27', { status: 'normal' }], ['employee-1', '2026-10-27', { status: 'sick', timestamp: 'chosen' }], ['employee-1', '2026-10-27', null], ['bad id', '2026-10-27', { status: 'sick' }]]) await assert.rejects(h.service.adminRecord(documentId, date, input));
+  await assert.rejects(h.service.adminRecord('employee-2', '2026-10-27', { status: 'sick' }), /no existe/);
+  h.entry.teamRole = 'operative';
+  await assert.rejects(h.service.adminRecord('employee-1', '2026-10-27', { status: 'sick' }), /Operativo/);
+  assert.equal(h.state.records.length, 0);
+});
+test('administrative arrivals are rejected on the configured rest day', async () => {
+  const h = harness();
+  h.entry.paymentAccount = { restDay: 0 };
+  await assert.rejects(h.service.adminRecord('employee-1', '2026-10-26', { status: 'on_time' }), /descanso/);
+  assert.equal(h.state.records.length, 0);
+  assert.equal((await h.service.adminRecord('employee-1', '2026-10-27', { status: 'on_time' })).status, 'recorded');
 });

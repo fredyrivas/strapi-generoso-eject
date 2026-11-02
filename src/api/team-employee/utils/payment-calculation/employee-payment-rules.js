@@ -64,10 +64,10 @@ function calculateEmployeePaymentRules(input) {
         const punctual = normal && record.punctual;
         const baseDay = base.days[dayIndex];
         const members = input.payGroup === "fixed" ? baseDay.input.fixedMembers : baseDay.input.auxiliaryMembers;
-        // A recorded employee cannot be assigned a group's share if that group has no members.
+        // A group captured with zero members gets no share that day ($0); an uncaptured count stays pending.
         const allocationAvailable = members !== null && members > 0;
-        const tips = normal ? allocationAvailable ? baseDay.values.individualTips : null : 0;
-        const shiftBonus = normal ? allocationAvailable
+        const tips = normal && members !== 0 ? allocationAvailable ? baseDay.values.individualTips : null : 0;
+        const shiftBonus = normal && members !== 0 ? allocationAvailable
             ? input.payGroup === "fixed" ? baseDay.values.fixedBonus : baseDay.values.auxiliaryBonus
             : null : 0;
         return {

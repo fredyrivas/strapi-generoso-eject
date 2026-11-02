@@ -6,6 +6,7 @@ module.exports = {
   },
   async record(ctx) { return run(ctx, () => strapi.service('api::team-employee.team-attendance').record(ctx.state.user.id, ctx.request.body)); },
   async reportSick(ctx) { return run(ctx, () => strapi.service('api::team-employee.team-attendance').reportSick(ctx.state.user.id, ctx.request.body)); },
+  async adminRecord(ctx) { return run(ctx, () => strapi.service('api::team-employee.team-attendance').adminRecord(ctx.params.documentId, ctx.params.date, ctx.request.body)); },
   async adminWeek(ctx) { return run(ctx, () => strapi.service('api::team-employee.team-attendance').adminWeek(ctx.query.page ?? '1')); },
 };
 async function run(ctx, operation) {

@@ -12,5 +12,6 @@ module.exports = ({ strapi }) => ({ routes: [
   })),
   ...[
     ['GET', '/team-admin/checkins', 'adminWeek'],
+    ['PUT', '/team-admin/employees/:documentId/checkins/:date', 'adminRecord'],
   ].map(([method, path, action]) => ({ method, path, handler: ctx => strapi.controller('api::team-employee.team-attendance')[action](ctx), config: { auth: { strategies: ['users-permissions'], scope: [] }, policies: ['api::team-employee.team-admin'] } })),
 ] });
