@@ -18,6 +18,7 @@
     "startDate": { "type": "date", "required": true },
     "phone": { "type": "string", "required": true, "regex": "^\\+[1-9][0-9]{7,14}$", "maxLength": 16 },
     "position": { "type": "string", "required": true, "minLength": 2, "maxLength": 100 },
+    "profilePhoto": { "type": "text", "private": true, "searchable": false },
     "status": {
       "type": "enumeration",
       "enum": ["invited", "active", "inactive"],

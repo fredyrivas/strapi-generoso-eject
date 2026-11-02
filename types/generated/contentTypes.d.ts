@@ -1227,6 +1227,7 @@ export interface ApiTeamEmployeeTeamEmployee
         maxLength: 100;
         minLength: 2;
       }>;
+    profilePhoto: Schema.Attribute.Text & Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
     startDate: Schema.Attribute.Date & Schema.Attribute.Required;
     status: Schema.Attribute.Enumeration<['invited', 'active', 'inactive']> &
