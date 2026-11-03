@@ -37,8 +37,8 @@ function validChallenge(secret, hash, challenge, now) {
   if (Number(expires) < seconds || Number(expires) > seconds + 120) return false;
   return timingSafeEqual(Buffer.from(signed), Buffer.from(signature(secret, hash, localClock(now).date, expires, nonce)));
 }
-function weekWithRecords(records, now) {
-  const week = currentWeek(now);
+function weekWithRecords(records, now, weekStart = null) {
+  const week = currentWeek(now, weekStart);
   return { ...week, days: week.days.map(day => { const record = records.find(record => record.date === day.date); return { ...day, status: record ? attendanceKind(record.kind) === 'sick' ? 'sick' : punctualAt(new Date(record.timestamp)) ? 'on_time' : 'late' : day.date > week.today ? 'upcoming' : 'no_record', timestamp: record ? new Date(record.timestamp).toISOString() : null }; }) };
 }
 module.exports = { SITE, LOCK, localClock, punctualAt, openAt, locationInput, validateLocation, challengeFor, validChallenge, weekWithRecords };

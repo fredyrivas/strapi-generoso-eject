@@ -4,6 +4,7 @@ const { errors: { ApplicationError, ValidationError, NotFoundError, ForbiddenErr
 const { currentWeek } = require('../utils/personal-access');
 const { LOCK, localClock, openAt, punctualAt, locationInput, validateLocation, challengeFor, validChallenge, weekWithRecords } = require('../utils/attendance');
 const { attendanceKind } = require('../utils/attendance-kind');
+const { weekStartInput } = require('../../team-salary-week/utils/input');
 const E = 'api::team-employee.team-employee', U = 'plugin::users-permissions.user', A = 'api::team-checkin.team-checkin';
 const available = entry => entry?.status === 'active' && entry.account?.confirmed === true && !entry.account.blocked && entry.account.provider === 'local';
 const conflict = message => new ApplicationError(message, { code: 'TEAM_CONFLICT' });
@@ -110,14 +111,16 @@ module.exports = ({ strapi, clock = () => new Date() }) => {
         return { status: existing ? 'updated' : 'recorded', checkin: attendanceDto(saved) };
       });
     },
-    async adminWeek(rawPage = '1') {
+    // Without a week it shows the current one; past and future weeks only read their records.
+    async adminWeek(rawPage = '1', weekStart = null) {
       if (!/^[1-9]\d{0,4}$/.test(String(rawPage))) throw new ValidationError('La página no es válida.');
-      const page = Number(rawPage), pageSize = 25, now = clock(), week = currentWeek(now);
+      if (weekStart !== null) weekStartInput(weekStart);
+      const page = Number(rawPage), pageSize = 25, now = clock(), week = currentWeek(now, weekStart);
       const filters = { teamRole: { $ne: 'operative' } };
       const employees = await strapi.documents(E).findMany({ filters, fields: ['documentId', 'fullName', 'status'], sort: ['fullName:asc', 'documentId:asc'], start: (page - 1) * pageSize, limit: pageSize });
       const total = await strapi.documents(E).count({ filters });
       const rows = employees.length ? await strapi.documents(A).findMany({ filters: { employee: { documentId: { $in: employees.map(entry => entry.documentId) } }, date: { $gte: week.start, $lt: week.endExclusive } }, fields: ATTENDANCE_FIELDS, populate: { employee: { fields: ['documentId'] } }, limit: pageSize * 7 }) : [];
-      return { week, employees: employees.map(entry => ({ ...entry, days: weekWithRecords(rows.filter(row => row.employee?.documentId === entry.documentId), now).days })), pagination: { page, pageSize, total, pageCount: Math.max(1, Math.ceil(total / pageSize)) } };
+      return { week, employees: employees.map(entry => ({ ...entry, days: weekWithRecords(rows.filter(row => row.employee?.documentId === entry.documentId), now, weekStart).days })), pagination: { page, pageSize, total, pageCount: Math.max(1, Math.ceil(total / pageSize)) } };
     },
   };
 };

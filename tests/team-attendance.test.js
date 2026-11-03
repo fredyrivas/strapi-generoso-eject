@@ -94,6 +94,23 @@ test('administrative attendance excludes operative accounts from the list and it
   assert.equal('legacy' in result, false);
 });
 
+test('administrative attendance can show any week by its Monday, reading only that week', async () => {
+  const entries = [{ documentId: 'service', fullName: 'Servicio', status: 'active', teamRole: 'employee' }];
+  const queries = [];
+  const records = [{ date: '2026-10-27', timestamp: '2026-10-27T14:00:00Z', kind: 'normal', employee: { documentId: 'service' } }];
+  const strapi = { documents: uid => uid === E ? { findMany: async () => entries, count: async () => 1 } : { findMany: async query => { queries.push(query.filters.date); return records.filter(row => row.date >= query.filters.date.$gte && row.date < query.filters.date.$lt); } } };
+  const service = factory({ strapi, clock: () => new Date('2026-11-03T18:00:00Z') });
+  const past = await service.adminWeek('1', '2026-10-26');
+  assert.equal(past.week.start, '2026-10-26'); assert.equal(past.week.today, '2026-11-03');
+  assert.deepEqual(queries[0], { $gte: '2026-10-26', $lt: '2026-11-02' });
+  assert.deepEqual(past.employees[0].days.map(day => day.status), ['no_record', 'on_time', 'no_record', 'no_record', 'no_record', 'no_record', 'no_record']);
+  const current = await service.adminWeek('1');
+  assert.equal(current.week.start, '2026-11-02'); assert.deepEqual(current.employees[0].days.slice(1, 3).map(day => day.status), ['no_record', 'upcoming']);
+  const future = await service.adminWeek('1', '2026-11-09');
+  assert.ok(future.employees[0].days.every(day => day.status === 'upcoming'));
+  for (const week of ['2026-10-27', '2026-02-30', '']) await assert.rejects(service.adminWeek('1', week), { name: 'ValidationError' });
+});
+
 test('duplicate requests are idempotent and two concurrent requests store exactly one arrival', async () => {
   const h = harness(); const results = await Promise.all([h.service.record(h.account.id, h.input()), h.service.record(h.account.id, h.input())]); assert.deepEqual(results.map(row => row.status).sort(), ['already_registered', 'recorded']); assert.equal(h.state.records.length, 1);
   h.now = new Date('2026-10-28T19:00:00Z'); assert.equal((await h.service.record(h.account.id, { ...h.input(), latitude: 0 })).status, 'already_registered'); assert.equal(h.state.records.length, 1);
