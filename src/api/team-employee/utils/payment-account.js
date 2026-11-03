@@ -1,13 +1,17 @@
 'use strict';
 const { errors: { ValidationError } } = require('@strapi/utils');
-const { noPaymentCancellations, paymentCancellations } = require('./payment-calculation/employee-payment-adjustments');
-const FIELDS = ['monthlySalary', 'restDay', 'payGroup', 'consumptions', 'extraPay', 'cash', 'cancellations'];
+const { emptyPaymentAdjustments, paymentCancellations, paymentEntries, paymentMoney } = require('./payment-calculation/employee-payment-adjustments');
+const { baseSalariesWeek } = require('./payment-calculation/base-salaries');
+// Fixed configuration only; lists, cash and cancellations are saved per week in team-payment-week.
+const FIELDS = ['monthlySalary', 'restDay', 'payGroup'];
+// Accounts saved before weekly records kept these keys; they are moved out once and ignored here.
+const LEGACY = ['consumptions', 'extraPay', 'cash', 'cancellations'];
+const ADJUSTMENTS = ['consumptions', 'extraPayments', 'cash', 'cancellations'];
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const exactKeys = (value, keys) => Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 
 function money(value) {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > Number.MAX_SAFE_INTEGER / 100) throw new ValidationError('Los importes deben ser números válidos no negativos.');
-  return value;
+  try { return paymentMoney(value); } catch { throw new ValidationError('Los importes deben ser números válidos no negativos.'); }
 }
 
 function fieldValue(field, value) {
@@ -16,21 +20,8 @@ function fieldValue(field, value) {
     if (value !== null && (!Number.isInteger(value) || value < 0 || value > 6)) throw new ValidationError('El descanso debe ser un día de lunes a domingo.');
     return value;
   }
-  if (field === 'payGroup') {
-    if (value !== null && !['fixed', 'auxiliary'].includes(value)) throw new ValidationError('El grupo de reparto debe ser fijo o auxiliar.');
-    return value;
-  }
-  if (field === 'consumptions') {
-    if (!Array.isArray(value)) throw new ValidationError('Los consumos deben ser una lista de conceptos e importes.');
-    return value.map(item => {
-      if (!object(item) || !exactKeys(item, ['concept', 'amount']) || typeof item.concept !== 'string' || !item.concept.trim() || item.concept.trim().length > 180) throw new ValidationError('Cada consumo necesita un concepto de hasta 180 caracteres y un importe.');
-      return { concept: item.concept.trim(), amount: money(item.amount) };
-    });
-  }
-  if (field === 'cancellations') {
-    try { return paymentCancellations(value); } catch { throw new ValidationError('Cada cancelación debe indicar No aplica, Penalización o ninguna.'); }
-  }
-  return money(value);
+  if (value !== null && !['fixed', 'auxiliary'].includes(value)) throw new ValidationError('El grupo de reparto debe ser fijo o auxiliar.');
+  return value;
 }
 
 function revision(value) {
@@ -39,10 +30,8 @@ function revision(value) {
 }
 
 function paymentAccount(value) {
-  if (value == null) return { revision: 0, monthlySalary: null, restDay: null, payGroup: null, consumptions: [], extraPay: 0, cash: 0, cancellations: noPaymentCancellations() };
-  // Accounts saved before cancellations existed omit them and keep every concept.
-  if (object(value) && !Object.hasOwn(value, 'cancellations')) value = { ...value, cancellations: noPaymentCancellations() };
-  if (!object(value) || !exactKeys(value, ['revision', ...FIELDS])) throw new ValidationError('Los datos guardados de la cuenta requieren revisión.');
+  if (value == null) return { revision: 0, monthlySalary: null, restDay: null, payGroup: null };
+  if (!object(value) || !Object.keys(value).every(key => key === 'revision' || FIELDS.includes(key) || LEGACY.includes(key)) || !['revision', ...FIELDS].every(key => Object.hasOwn(value, key))) throw new ValidationError('Los datos guardados de la cuenta requieren revisión.');
   return { revision: revision(value.revision), ...Object.fromEntries(FIELDS.map(field => [field, fieldValue(field, value[field])])) };
 }
 
@@ -57,4 +46,14 @@ function paymentDto(entry) {
   return { employeeDocumentId: entry.documentId, configured: payment.monthlySalary !== null && payment.restDay !== null && payment.payGroup !== null, payment };
 }
 
-module.exports = { paymentAccount, paymentChange, paymentDto };
+/** Weekly lists must be dated inside their Monday-to-Sunday week. */
+function paymentAdjustments(value, weekStart) {
+  if (value == null) return emptyPaymentAdjustments();
+  if (!object(value) || !exactKeys(value, ADJUSTMENTS)) throw new ValidationError('Revisa consumos, pagos extra, efectivo y cancelaciones.');
+  try {
+    const week = baseSalariesWeek(weekStart);
+    return { consumptions: paymentEntries(value.consumptions, 'consumos', week), extraPayments: paymentEntries(value.extraPayments, 'pagos extra', week), cash: paymentMoney(value.cash), cancellations: paymentCancellations(value.cancellations) };
+  } catch (error) { throw new ValidationError(error instanceof RangeError ? error.message : 'Revisa los ajustes de la semana.'); }
+}
+
+module.exports = { paymentAccount, paymentChange, paymentDto, paymentAdjustments, LEGACY };

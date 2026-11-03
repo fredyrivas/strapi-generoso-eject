@@ -5,9 +5,10 @@
   "options": { "draftAndPublish": false },
   "pluginOptions": { "content-manager": { "visible": false }, "content-type-builder": { "visible": false } },
   "attributes": {
-    "recordKey": { "type": "enumeration", "enum": ["base-sueldos"], "default": "base-sueldos", "required": true, "unique": true, "private": true },
-    "weekStart": { "type": "date", "private": true },
+    "weekStart": { "type": "date", "unique": true, "private": true },
     "referenceDate": { "type": "date", "private": true },
+    "weekStatus": { "type": "enumeration", "enum": ["draft", "published"], "default": "draft", "required": true, "private": true },
+    "releasedAt": { "type": "datetime", "private": true },
     "revision": { "type": "integer", "required": true, "default": 1, "min": 1 },
     "days": { "type": "json", "required": true, "private": true }
   }

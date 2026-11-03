@@ -11,7 +11,9 @@ const checkinSchema = require('../src/api/team-checkin/content-types/team-checki
 const { createContentType } = require(path.join(path.dirname(require.resolve('@strapi/core/package.json')), 'dist/domain/content-type'));
 const entityValidator = require(path.join(path.dirname(require.resolve('@strapi/core/package.json')), 'dist/services/entity-validator'));
 const { LOCK } = require('../src/api/team-employee/utils/attendance');
-const E = 'api::team-employee.team-employee', U = 'plugin::users-permissions.user';
+const E = 'api::team-employee.team-employee', U = 'plugin::users-permissions.user', P = 'api::team-payment-week.team-payment-week', LOG = 'api::team-payment-log.team-payment-log', BASE = 'api::team-salary-week.team-salary-week';
+const noCancellations = { tips: null, shiftBonus: null, punctualityBonus: null };
+const weekly = (changes = {}) => ({ consumptions: [], extraPayments: [], cash: 0, cancellations: noCancellations, ...changes });
 
 function harness(options = {}) {
   const state = {
@@ -24,12 +26,19 @@ function harness(options = {}) {
       { documentId: 'employee-2', accountId: 2, status: 'active', teamRole: 'employee', fullName: 'Persona', startDate: '2026-10-01', phone: '+525512345678', position: 'Barista' },
       { documentId: 'employee-3', accountId: 3, status: 'active', teamRole: 'employee', fullName: 'Otra persona' },
     ],
-    updates: [], locks: [],
+    updates: [], locks: [], weeks: [], logs: [], bases: [],
   };
   const populated = entry => entry ? structuredClone({ ...entry, account: state.accounts.find(account => account.id === entry.accountId) }) : null;
   let queue = Promise.resolve();
   const strapi = {
     documents(uid) {
+      if (uid === P) return {
+        findFirst: async ({ filters }) => structuredClone(state.weeks.find(row => row.weekKey === filters.weekKey) ?? null),
+        create: async ({ data }) => { const row = { documentId: `week-${state.weeks.length + 1}`, ...structuredClone(data) }; state.weeks.push(row); return structuredClone(row); },
+        update: async ({ documentId, data }) => { const row = state.weeks.find(row => row.documentId === documentId); Object.assign(row, structuredClone(data)); if (options.failUpdate) throw new Error('controlled-update-failure'); return structuredClone(row); },
+      };
+      if (uid === LOG) return { create: async ({ data }) => { state.logs.push(structuredClone(data)); } };
+      if (uid === BASE) return { findFirst: async ({ filters }) => structuredClone(state.bases.find(row => row.weekStart === filters.weekStart) ?? null) };
       assert.equal(uid, E);
       return {
         findFirst: async ({ filters }) => populated(state.employees.find(entry => entry.accountId === filters.account.id)),
@@ -53,11 +62,11 @@ function harness(options = {}) {
       async transaction(operation) {
         const previous = queue; let release; queue = new Promise(resolve => { release = resolve; }); await previous;
         if (options.revokeBeforeLock) state.accounts[0].blocked = true;
-        const before = structuredClone(state.employees);
+        const before = structuredClone({ employees: state.employees, weeks: state.weeks, logs: state.logs });
         try { return await operation({ trx: { raw: async (sql, bindings) => {
           assert.match(sql, /pg_advisory_xact_lock/); assert.deepEqual(bindings, [LOCK]); state.locks.push('shared');
         } } }); }
-        catch (error) { state.employees = before; throw error; }
+        catch (error) { Object.assign(state, before); throw error; }
         finally { release(); }
       },
     },
@@ -97,7 +106,9 @@ test('an unconfigured payment account has no invented salary, rest day or group 
   const h = harness();
   const data = await h.service.readForEmployee('employee-2', 1);
   assert.equal(data.configured, false);
-  assert.deepEqual(data.payment, { revision: 0, monthlySalary: null, restDay: null, payGroup: null, consumptions: [], extraPay: 0, cash: 0, cancellations: { tips: null, shiftBonus: null, punctualityBonus: null } });
+  assert.deepEqual(data.payment, { revision: 0, monthlySalary: null, restDay: null, payGroup: null });
+  assert.deepEqual(await h.service.readWeekForEmployee('employee-2', '2026-10-26', 1), { employeeDocumentId: 'employee-2', weekStart: '2026-10-26', revision: 0, adjustments: weekly() });
+  assert.equal(h.state.weeks.length, 0);
   assert.equal(h.state.employees[0].paymentAccount, undefined);
   assert.equal(h.state.updates.length, 0);
 });
@@ -108,7 +119,7 @@ test('partial updates preserve other profile and payment fields on the same empl
   const first = await h.service.saveForEmployee('employee-2', { revision: 0, changes: { monthlySalary: 8000 } }, 1);
   assert.equal(first.payment.revision, 1);
   assert.equal(first.configured, false);
-  const second = await h.service.saveForEmployee('employee-2', { revision: 1, changes: { restDay: 0, payGroup: 'fixed', extraPay: 25, cash: 100 } }, 1);
+  const second = await h.service.saveForEmployee('employee-2', { revision: 1, changes: { restDay: 0, payGroup: 'fixed' } }, 1);
   assert.equal(second.configured, true);
   assert.equal(second.payment.monthlySalary, 8000);
   assert.equal(h.state.employees.length, 2);
@@ -118,14 +129,44 @@ test('partial updates preserve other profile and payment fields on the same empl
   assert.deepEqual(h.state.locks.slice(0, 3), ['shared', 'employees', 'accounts']);
 });
 
-test('consumptions and adjustments replace current values without weekly records or history', async () => {
+test('weekly lists are saved per employee and week, dated inside the week, and every save is logged', async () => {
   const h = harness();
-  await h.service.saveForEmployee('employee-2', { revision: 0, changes: { consumptions: [{ concept: ' Comida ', amount: 50 }, { concept: 'Comida', amount: 0 }], extraPay: 100 } }, 1);
-  const saved = await h.service.saveForEmployee('employee-2', { revision: 1, changes: { consumptions: [{ concept: 'Café', amount: 20 }], extraPay: 0 } }, 1);
-  assert.deepEqual(saved.payment.consumptions, [{ concept: 'Café', amount: 20 }]);
-  assert.equal(saved.payment.extraPay, 0);
-  assert.equal(saved.payment.revision, 2);
-  assert.deepEqual(Object.keys(h.state.employees[0].paymentAccount).sort(), ['cancellations', 'cash', 'consumptions', 'extraPay', 'monthlySalary', 'payGroup', 'restDay', 'revision']);
+  const first = await h.service.saveWeekForEmployee('employee-2', { weekStart: '2026-10-26', revision: 0, adjustments: weekly({ consumptions: [{ date: '2026-10-27', concept: ' Comida ', amount: 50 }], extraPayments: [{ date: '2026-11-01', concept: 'Turno extra', amount: 100 }] }) }, 1, { username: 'fredy' });
+  assert.equal(first.revision, 1);
+  assert.deepEqual(first.adjustments.consumptions, [{ date: '2026-10-27', concept: 'Comida', amount: 50 }]);
+  assert.equal(h.state.weeks[0].weekKey, 'employee-2:2026-10-26');
+  assert.equal(h.state.weeks[0].configuration, null);
+  const other = await h.service.saveWeekForEmployee('employee-2', { weekStart: '2026-11-02', revision: 0, adjustments: weekly({ cash: 300 }) }, 1, { username: 'fredy' });
+  assert.equal(other.revision, 1);
+  const saved = await h.service.saveWeekForEmployee('employee-2', { weekStart: '2026-10-26', revision: 1, adjustments: weekly({ consumptions: [{ date: '2026-10-28', concept: 'Café', amount: 20 }] }) }, 1, { username: 'fredy' });
+  assert.deepEqual(saved.adjustments.consumptions, [{ date: '2026-10-28', concept: 'Café', amount: 20 }]);
+  assert.deepEqual(saved.adjustments.extraPayments, []);
+  assert.equal(saved.revision, 2);
+  assert.equal(h.state.weeks.length, 2);
+  assert.equal(h.state.employees[0].paymentAccount, undefined);
+  assert.deepEqual(h.state.logs.map(entry => [entry.weekStart, entry.actor, entry.summary]), [['2026-10-26', 'fredy', 'Guardó ajustes de Persona'], ['2026-11-02', 'fredy', 'Guardó ajustes de Persona'], ['2026-10-26', 'fredy', 'Guardó ajustes de Persona']]);
+  assert.equal(h.state.logs[2].before.consumptions[0].concept, 'Comida');
+  await assert.rejects(h.service.saveWeekForEmployee('employee-2', { weekStart: '2026-10-26', revision: 1, adjustments: weekly() }, 1, {}), error => error.details.code === 'TEAM_CONFLICT');
+  for (const input of [
+    { weekStart: '2026-10-27', revision: 0, adjustments: weekly() },
+    { weekStart: '2026-11-09', revision: 0, adjustments: weekly({ consumptions: [{ date: '2026-11-16', concept: 'Comida', amount: 1 }] }) },
+    { weekStart: '2026-11-09', revision: 0, adjustments: weekly({ extraPayments: [{ date: '2026-11-08', concept: 'Extra', amount: 1 }] }) },
+    { weekStart: '2026-11-09', revision: 0, adjustments: weekly({ extraPayments: [{ concept: 'Extra', amount: 1 }] }) },
+    { weekStart: '2026-11-09', revision: 0, adjustments: { ...weekly(), extraPay: 10 } },
+  ]) await assert.rejects(h.service.saveWeekForEmployee('employee-2', input, 1, {}), { name: 'ValidationError' });
+});
+
+test('a week published before the employee had adjustments keeps their current configuration', async () => {
+  const h = harness();
+  h.state.employees[0].paymentAccount = { revision: 1, monthlySalary: 8000, restDay: 0, payGroup: 'fixed' };
+  h.state.bases.push({ weekStart: '2026-10-26', weekStatus: 'published' });
+  await h.service.saveWeekForEmployee('employee-2', { weekStart: '2026-10-26', revision: 0, adjustments: weekly() }, 1, {});
+  assert.deepEqual(h.state.weeks[0].configuration, { monthlySalary: 8000, restDay: 0, payGroup: 'fixed' });
+});
+
+test('legacy accounts that still hold weekly keys read only their fixed configuration', () => {
+  assert.deepEqual(paymentAccount({ revision: 2, monthlySalary: 8000, restDay: 0, payGroup: 'fixed', consumptions: [{ concept: 'Café', amount: 20 }], extraPay: 50, cash: 100 }), { revision: 2, monthlySalary: 8000, restDay: 0, payGroup: 'fixed' });
+  assert.throws(() => paymentAccount({ revision: 2, monthlySalary: 8000, restDay: 0, payGroup: 'fixed', other: 1 }), { name: 'ValidationError' });
 });
 
 test('each active account can read only its linked current settings', async () => {
@@ -160,6 +201,7 @@ test('operative accounts have no personal or administrative payment access and k
   const h = harness();
   h.state.employees[0].teamRole = 'operative';
   h.state.employees[0].paymentAccount = { ...paymentAccount(null), revision: 3, monthlySalary: 8000, restDay: 0, payGroup: 'fixed' };
+  await assert.rejects(h.service.saveWeekForEmployee('employee-2', { weekStart: '2026-10-26', revision: 0, adjustments: weekly() }, 1, {}), { name: 'ForbiddenError' });
   const before = structuredClone(h.state.employees);
   await assert.rejects(h.service.readForAccount(2), { name: 'ForbiddenError' });
   await assert.rejects(h.service.readForEmployee('employee-2', 1), { name: 'ForbiddenError' });
@@ -196,15 +238,15 @@ test('a failed write rolls back the current values and revision', async () => {
   assert.equal(h.state.employees[0].paymentAccount, undefined);
 });
 
-test('only current manual fields are writable; dates, totals, roles and attendance-derived fields are rejected', () => {
-  for (const field of ['date', 'weekStart', 'referenceDate', 'paidDays', 'punctuality', 'punctualityBonus', 'total', 'employee', 'account', 'teamRole', 'history', 'revision']) {
+test('only the fixed configuration is writable here; weekly lists, dates, totals and roles are rejected', () => {
+  for (const field of ['date', 'weekStart', 'referenceDate', 'paidDays', 'punctuality', 'punctualityBonus', 'total', 'employee', 'account', 'teamRole', 'history', 'revision', 'consumptions', 'extraPay', 'extraPayments', 'cash', 'cancellations']) {
     assert.throws(() => paymentChange({ revision: 0, changes: { [field]: 1 } }), { name: 'ValidationError' });
   }
-  for (const changes of [{ monthlySalary: '8000' }, { monthlySalary: -1 }, { monthlySalary: Infinity }, { restDay: 7 }, { restDay: 1.5 }, { payGroup: 'admin' }, { cash: -1 }, { extraPay: NaN }, { consumptions: [{ concept: '', amount: 10 }] }, { consumptions: [{ concept: 'Comida', amount: -1 }] }, { consumptions: [{ concept: 'Comida', amount: 20, date: '2026-10-31' }] }, {}]) {
+  for (const changes of [{ monthlySalary: '8000' }, { monthlySalary: -1 }, { monthlySalary: Infinity }, { restDay: 7 }, { restDay: 1.5 }, { payGroup: 'admin' }, {}]) {
     assert.throws(() => paymentChange({ revision: 0, changes }), { name: 'ValidationError' });
   }
-  assert.throws(() => paymentChange({ revision: '0', changes: { cash: 0 } }), { name: 'ValidationError' });
-  assert.equal(paymentChange({ revision: 0, changes: { monthlySalary: 0, restDay: 0, cash: 0 } }).changes.monthlySalary, 0);
+  assert.throws(() => paymentChange({ revision: '0', changes: { restDay: 0 } }), { name: 'ValidationError' });
+  assert.equal(paymentChange({ revision: 0, changes: { monthlySalary: 0, restDay: 0 } }).changes.monthlySalary, 0);
 });
 
 test('payment data is private, absent from general profiles and cannot be edited through employee details', () => {
@@ -220,16 +262,23 @@ test('payment data is private, absent from general profiles and cannot be edited
 
 test('settings routes are admin-only and their controller reads/writes using the authenticated actor', async () => {
   const routes = require('../src/api/team-employee/routes/payment-settings')({ strapi: {} }).routes;
-  assert.deepEqual(routes.map(route => route.method), ['GET', 'PATCH']);
-  for (const route of routes) { assert.equal(route.path, '/team-admin/employees/:documentId/payment/settings'); assert.deepEqual(route.config.policies, ['api::team-employee.team-admin']); assert.deepEqual(route.config.auth, { strategies: ['users-permissions'], scope: [] }); }
+  assert.deepEqual(routes.map(route => [route.method, route.path]), [['GET', '/team-admin/employees/:documentId/payment/settings'], ['PATCH', '/team-admin/employees/:documentId/payment/settings'], ['GET', '/team-admin/employees/:documentId/payment/week'], ['PUT', '/team-admin/employees/:documentId/payment/week']]);
+  for (const route of routes) { assert.deepEqual(route.config.policies, ['api::team-employee.team-admin']); assert.deepEqual(route.config.auth, { strategies: ['users-permissions'], scope: [] }); }
   const h = harness(), previous = global.strapi, controller = require('../src/api/team-employee/controllers/team-payment-settings');
   global.strapi = { service: () => h.service };
   try {
-    const ctx = { state: { user: { id: 1 } }, params: { documentId: 'employee-2' }, request: { body: { revision: 0, changes: { monthlySalary: 8000, restDay: 0, payGroup: 'fixed', consumptions: [{ concept: 'Comida', amount: 50 }], extraPay: 100, cash: 200 } } }, query: {}, set() {}, badRequest: () => 'rejected' };
-    await controller.save(ctx); assert.equal(ctx.body.payment.revision, 1); assert.equal(ctx.body.payment.cash, 200);
-    await controller.read(ctx); assert.equal(ctx.body.payment.extraPay, 100);
+    const ctx = { state: { user: { id: 1 } }, params: { documentId: 'employee-2' }, request: { body: { revision: 0, changes: { monthlySalary: 8000, restDay: 0, payGroup: 'fixed' } } }, query: {}, set() {}, badRequest: () => 'rejected' };
+    await controller.save(ctx); assert.equal(ctx.body.payment.revision, 1); assert.equal(ctx.body.payment.monthlySalary, 8000);
+    await controller.read(ctx); assert.equal(ctx.body.payment.payGroup, 'fixed');
     await controller.save(ctx); assert.equal(ctx.status, 409); assert.match(ctx.body.error.message, /cambió/);
     ctx.query = { week: '2026-10-26' }; assert.equal(await controller.save(ctx), 'rejected'); assert.equal(h.state.updates.length, 1);
     ctx.query = {}; ctx.state.user.id = 2; await assert.rejects(controller.save(ctx), { name: 'ForbiddenError' });
+    const week = require('../src/api/team-employee/controllers/team-payment-week');
+    const weekCtx = { state: { user: { id: 1, username: 'fredy' } }, params: { documentId: 'employee-2' }, request: { body: { weekStart: '2026-10-26', revision: 0, adjustments: weekly({ cash: 200 }) } }, query: {}, set() {} };
+    await week.save(weekCtx); assert.equal(weekCtx.body.revision, 1); assert.equal(h.state.logs[0].actor, 'fredy');
+    weekCtx.query = { week: '2026-10-26' }; await week.read(weekCtx); assert.equal(weekCtx.body.adjustments.cash, 200);
+    await assert.rejects(week.save(weekCtx), { name: 'ValidationError' });
+    weekCtx.query = {}; await assert.rejects(week.read(weekCtx), { name: 'ValidationError' });
+    weekCtx.query = {}; await week.save(weekCtx); assert.equal(weekCtx.status, 409);
   } finally { global.strapi = previous; }
 });

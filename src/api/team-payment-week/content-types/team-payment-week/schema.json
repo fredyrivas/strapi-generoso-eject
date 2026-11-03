@@ -1,0 +1,15 @@
+{
+  "kind": "collectionType",
+  "collectionName": "team_payment_weeks",
+  "info": { "singularName": "team-payment-week", "pluralName": "team-payment-weeks", "displayName": "Pago semanal" },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": { "content-manager": { "visible": false }, "content-type-builder": { "visible": false } },
+  "attributes": {
+    "employee": { "type": "relation", "relation": "manyToOne", "target": "api::team-employee.team-employee", "required": true, "private": true },
+    "weekKey": { "type": "string", "required": true, "unique": true, "private": true, "maxLength": 180 },
+    "weekStart": { "type": "date", "required": true, "private": true },
+    "revision": { "type": "integer", "required": true, "default": 1, "min": 1 },
+    "adjustments": { "type": "json", "required": true, "private": true },
+    "configuration": { "type": "json", "private": true }
+  }
+}

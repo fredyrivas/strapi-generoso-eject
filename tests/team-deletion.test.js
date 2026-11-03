@@ -40,6 +40,7 @@ function harness(options = {}) {
       { documentId: 'person-3', accountId: 3, fullName: 'Otra persona', status: 'active', teamRole: 'employee' },
     ],
     checkins: [{ documentId: 'arrival-1', employee: 'person-2', date: '2026-10-28' }, { documentId: 'arrival-old', employee: 'person-2', date: '2026-10-01' }, { documentId: 'arrival-other', employee: 'person-3', date: '2026-10-28' }],
+    paymentWeeks: [{ documentId: 'week-1', employee: 'person-2', weekStart: '2026-10-26' }, { documentId: 'week-other', employee: 'person-3', weekStart: '2026-10-26' }],
   };
   let queue = Promise.resolve();
   const populated = entry => entry ? { ...entry, account: state.accounts.find(account => account.id === entry.accountId) } : null;
@@ -54,6 +55,10 @@ function harness(options = {}) {
         count: async ({ filters }) => state.checkins.filter(row => row.employee === filters.employee.documentId).length,
         findMany: async ({ filters, limit }) => structuredClone(state.checkins.filter(row => row.employee === filters.employee.documentId).slice(0, limit)),
         delete: async ({ documentId }) => { state.checkins = state.checkins.filter(row => row.documentId !== documentId); },
+      };
+      if (uid === 'api::team-payment-week.team-payment-week') return {
+        findMany: async ({ filters, limit }) => structuredClone(state.paymentWeeks.filter(row => row.employee === filters.employee.documentId).slice(0, limit)),
+        delete: async ({ documentId }) => { state.paymentWeeks = state.paymentWeeks.filter(row => row.documentId !== documentId); },
       };
       assert.fail('Unexpected document type: ' + uid);
     },
@@ -100,6 +105,7 @@ test('deletion removes the entire account, current profile, onboarding secrets a
   assert.equal(h.state.accounts.some(account => account.id === 2), false);
   assert.equal(h.state.employees.some(employee => employee.documentId === 'person-2'), false);
   assert.deepEqual(h.state.checkins, [others.checkin]);
+  assert.deepEqual(h.state.paymentWeeks.map(row => row.documentId), ['week-other']);
   assert.deepEqual(h.state.accounts.find(account => account.id === 3), others.account);
   assert.deepEqual(h.state.employees[0], others.employee);
 });

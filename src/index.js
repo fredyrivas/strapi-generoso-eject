@@ -3,6 +3,7 @@
 const configureTeam = require('./team-config');
 const configureAttendance = require('./team-attendance-config');
 const configureOnboarding = require('./team-onboarding-config');
+const configurePaymentWeeks = require('./team-payment-weeks-config');
 
 module.exports = {
   /**
@@ -17,6 +18,9 @@ module.exports = {
     await configureTeam(strapi);
     await configureOnboarding(strapi);
     await configureAttendance(strapi);
+    // A failed one-time move rolls back and is logged; the CMS still starts with the data untouched.
+    try { await configurePaymentWeeks(strapi); }
+    catch (error) { strapi.log.error(`[team-payment-weeks] La migración semanal no se aplicó: ${error.message}`); }
     const store = strapi.store({ type: 'plugin', name: 'sortable-entries' });
     const key = 'configured-content-manager-v1';
     if (await store.get({ key })) return;

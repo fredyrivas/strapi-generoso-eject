@@ -3,7 +3,7 @@
 const { errors: { ValidationError, ApplicationError, NotFoundError, ForbiddenError } } = require('@strapi/utils');
 const adminPolicy = require('../policies/team-admin');
 const { LOCK } = require('../utils/attendance');
-const E = 'api::team-employee.team-employee', U = 'plugin::users-permissions.user', A = 'api::team-checkin.team-checkin';
+const E = 'api::team-employee.team-employee', U = 'plugin::users-permissions.user', A = 'api::team-checkin.team-checkin', P = 'api::team-payment-week.team-payment-week';
 const validId = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
 const conflict = message => new ApplicationError(message, { code: 'TEAM_CONFLICT' });
 
@@ -62,6 +62,12 @@ module.exports = ({ strapi }) => {
           const rows = await strapi.documents(A).findMany({ filters: { employee: { documentId } }, fields: ['documentId'], limit: 100 });
           if (!rows.length) break;
           for (const arrival of rows) { await strapi.documents(A).delete({ documentId: arrival.documentId }); checkinsDeleted++; }
+        }
+        // Weekly payment rows belong to the employee; the change log keeps its audit trail.
+        while (true) {
+          const rows = await strapi.documents(P).findMany({ filters: { employee: { documentId } }, fields: ['documentId'], limit: 100 });
+          if (!rows.length) break;
+          for (const week of rows) await strapi.documents(P).delete({ documentId: week.documentId });
         }
         await strapi.documents(E).delete({ documentId });
         const removed = await strapi.plugin('users-permissions').service('user').remove({ id: account.id });

@@ -1,12 +1,13 @@
 'use strict';
 const { errors: { ValidationError } } = require('@strapi/utils');
+const { baseSalariesWeek } = require('../../team-employee/utils/payment-calculation/base-salaries');
 const FIELDS = ['cardTips', 'cashTips', 'fixedMembers', 'auxiliaryMembers', 'bonuses'];
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const exactKeys = (value, keys) => Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 
 function snapshotInput(value) {
-  if (!object(value) || !exactKeys(value, ['referenceDate', 'revision', 'days'])) throw new ValidationError('Revisa los datos de Base sueldos.');
-  referenceDateInput(value.referenceDate);
+  if (!object(value) || !exactKeys(value, ['weekStart', 'revision', 'days'])) throw new ValidationError('Revisa los datos de Base sueldos.');
+  weekStartInput(value.weekStart);
   if (!Number.isInteger(value.revision) || value.revision < 0 || value.revision > 2147483646) throw new ValidationError('La revisión de la base no es válida.');
   if (!Array.isArray(value.days) || value.days.length !== 7) throw new ValidationError('Envía las siete filas de lunes a domingo.');
   const days = new Map();
@@ -22,27 +23,26 @@ function snapshotInput(value) {
     }
     days.set(day.dayIndex, { dayIndex: day.dayIndex, input });
   }
-  return { referenceDate: value.referenceDate, revision: value.revision, days: Array.from({ length: 7 }, (_, dayIndex) => days.get(dayIndex)) };
+  return { weekStart: value.weekStart, revision: value.revision, days: Array.from({ length: 7 }, (_, dayIndex) => days.get(dayIndex)) };
 }
 
-function referenceDateInput(value) {
-  const date = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(value + 'T12:00:00Z') : null;
-  if (!date || !Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== value) throw new ValidationError('Selecciona una fecha de referencia válida.');
+/** Monday of the week that contains a calendar date, in Mexico City. */
+function weekStartOf(value) {
+  try { return baseSalariesWeek(value).start; } catch { throw new ValidationError('Selecciona una semana válida.'); }
+}
+
+function weekStartInput(value) {
+  if (typeof value !== 'string' || weekStartOf(value) !== value) throw new ValidationError('La semana debe iniciar en lunes.');
   return value;
 }
 
-function currentReferenceDate(now = new Date()) {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
-  const value = type => parts.find(part => part.type === type).value;
-  return value('year') + '-' + value('month') + '-' + value('day');
-}
+function currentWeekStart(now = new Date()) { return baseSalariesWeek(undefined, now).start; }
 
-function emptySnapshot(referenceDate = currentReferenceDate()) {
-  return { referenceDate, revision: 0, days: Array.from({ length: 7 }, (_, dayIndex) => ({ dayIndex, input: Object.fromEntries(FIELDS.map(field => [field, null])) })) };
+function emptySnapshot(weekStart = currentWeekStart()) {
+  return { weekStart, revision: 0, days: Array.from({ length: 7 }, (_, dayIndex) => ({ dayIndex, input: Object.fromEntries(FIELDS.map(field => [field, null])) })) };
 }
 
 // Preserve already captured inputs from the former date-keyed representation on read.
-// Rows stay independent of dates; only the base's reference date is saved separately.
 function storedSnapshot(row) {
   let days = row.days;
   if (Array.isArray(days) && days.every(day => object(day) && exactKeys(day, ['date', 'input']))) {
@@ -52,7 +52,7 @@ function storedSnapshot(row) {
       return { dayIndex: (date.getUTCDay() + 6) % 7, input: day.input };
     });
   }
-  return snapshotInput({ referenceDate: row.referenceDate, revision: row.revision, days });
+  return snapshotInput({ weekStart: row.weekStart, revision: row.revision, days });
 }
 
-module.exports = { snapshotInput, emptySnapshot, storedSnapshot, currentReferenceDate };
+module.exports = { snapshotInput, emptySnapshot, storedSnapshot, weekStartOf, weekStartInput, currentWeekStart };
