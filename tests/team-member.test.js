@@ -13,9 +13,17 @@ test('member sessions authorize only the current active account and project the 
   const context = { state: { user } };
   assert.equal(await policy(context, {}, { strapi: { documents: () => ({ findFirst: async input => { query = input; return { ...employee, password: 'private', invitationTokenHash: 'private' }; } }) } }), true);
   assert.deepEqual(query.filters, { account: { id: 2 } });
+  assert.equal(query.populate, undefined);
   assert.deepEqual(context.state.teamSession.user, { username: 'two', email: 'two@example.invalid' });
   assert.equal(context.state.teamSession.canAdmin, false);
   assert.deepEqual(Object.keys(context.state.teamSession.profile).sort(), ['documentId', 'email', 'fullName', 'phone', 'position', 'startDate', 'status', 'teamRole']);
+  assert.equal(context.state.teamSession.profile.email, user.email);
+});
+
+test('member profiles reuse the authenticated account email without loading its relation again', async () => {
+  const context = { state: { user: { ...user, email: 'current@example.invalid' } } };
+  assert.equal(await policy(context, {}, { strapi: { documents: () => ({ findFirst: async () => employee }) } }), true);
+  assert.equal(context.state.teamSession.profile.email, 'current@example.invalid');
 });
 
 test('pending, inactive, blocked, unconfirmed and unrelated accounts cannot read a member profile', async () => {
@@ -75,6 +83,21 @@ test('editing updates one profile and its current account without changing crede
   assert.equal(result.employee.documentId, 'employee-2'); assert.equal(result.employee.fullName, 'Nombre corregido'); assert.equal(result.employee.email, 'new@example.invalid'); assert.equal(result.employee.teamRole, 'admin');
   assert.deepEqual(state.accounts[1], { ...before, email: 'new@example.invalid' }); assert.equal(state.entries.length, 2);
   assert.equal(result.employee.account, undefined); assert.equal(result.employee.password, undefined); assert.equal(result.employee.activationTokenHash, undefined);
+});
+
+test('service, operative and production roles can be saved and sign in without administrative access', async () => {
+  const adminPolicy = require('../src/api/team-employee/policies/team-admin');
+  for (const teamRole of ['employee', 'operative', 'production']) {
+    const { service } = harness();
+    const { employee: updated } = await service.update('employee-2', { teamRole }, 1);
+    assert.equal(updated.teamRole, teamRole);
+    const context = { state: { user } };
+    const environment = { strapi: { documents: () => ({ findFirst: async () => ({ ...employee, teamRole }) }) } };
+    assert.equal(await policy(context, {}, environment), true);
+    assert.equal(context.state.teamSession.profile.teamRole, teamRole);
+    assert.equal(context.state.teamSession.canAdmin, false);
+    assert.equal(await adminPolicy({ state: { user } }, {}, environment), false);
+  }
 });
 
 test('duplicate email and username collisions are rejected without modifying either account', async () => {

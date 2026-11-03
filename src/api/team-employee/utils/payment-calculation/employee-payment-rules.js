@@ -83,12 +83,14 @@ function calculateEmployeePaymentRules(input) {
     const normalDays = days.filter(day => day.status === "on_time" || day.status === "late").length;
     const sickDays = days.filter(day => day.status === "sick").length;
     const punctualDays = days.filter(day => day.punctual).length;
+    const lateDays = normalDays - punctualDays;
     const paidRestDays = normalDays + sickDays > 0 ? 1 : 0;
     const paidDays = normalDays + sickDays + paidRestDays;
     const weeklySalary = input.monthlySalary / 4;
     const dailySalary = weeklySalary / 7;
     const salary = dailySalary * paidDays;
-    const punctualityBonus = exports.EMPLOYEE_PUNCTUALITY_BONUS * punctualDays / workingDaysPerWeek;
+    // A single late day cancels the whole weekly bonus, regardless of sick days.
+    const punctualityBonus = lateDays > 0 ? 0 : exports.EMPLOYEE_PUNCTUALITY_BONUS * punctualDays / workingDaysPerWeek;
     const sum = (field) => {
         let total = 0;
         for (const day of days) {
@@ -103,10 +105,10 @@ function calculateEmployeePaymentRules(input) {
     return {
         referenceDate: input.referenceDate, timeZone: base_salaries_1.BASE_SALARIES_TIME_ZONE, start: week.start, endExclusive: week.endExclusive,
         days,
-        attendance: { normalDays, sickDays, punctualDays, lateDays: normalDays - punctualDays, paidRestDays, paidDays },
+        attendance: { normalDays, sickDays, punctualDays, lateDays, paidRestDays, paidDays },
         monthlySalary: input.monthlySalary, weeklySalary, dailySalary, salary,
         tips, shiftBonus,
-        punctuality: punctualDays === workingDaysPerWeek ? "full" : punctualDays > 0 ? "partial" : "none",
+        punctuality: lateDays > 0 ? "none" : punctualDays === workingDaysPerWeek ? "full" : punctualDays > 0 ? "partial" : "none",
         punctualityBonus,
         // Personal extras, consumptions and cash/deposit will be applied in the account step.
         subtotal: tips === null || shiftBonus === null ? null : salary + tips + shiftBonus + punctualityBonus,

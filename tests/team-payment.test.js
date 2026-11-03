@@ -156,6 +156,22 @@ test('employees cannot administer salary and blocked, inactive or unconfirmed us
   assert.equal(h.state.updates.length, 0);
 });
 
+test('operative accounts have no personal or administrative payment access and keep stored history intact', async () => {
+  const h = harness();
+  h.state.employees[0].teamRole = 'operative';
+  h.state.employees[0].paymentAccount = { ...paymentAccount(null), revision: 3, monthlySalary: 8000, restDay: 0, payGroup: 'fixed' };
+  const before = structuredClone(h.state.employees);
+  await assert.rejects(h.service.readForAccount(2), { name: 'ForbiddenError' });
+  await assert.rejects(h.service.readForEmployee('employee-2', 1), { name: 'ForbiddenError' });
+  await assert.rejects(h.service.saveForEmployee('employee-2', { revision: 3, changes: { monthlySalary: 9000 } }, 1), { name: 'ForbiddenError' });
+  assert.deepEqual(h.state.employees, before);
+  assert.equal(h.state.updates.length, 0);
+  for (const teamRole of ['employee', 'production', 'admin']) {
+    h.state.employees[0].teamRole = teamRole;
+    assert.equal((await h.service.readForAccount(2)).payment.monthlySalary, 8000);
+  }
+});
+
 test('administrative permission is revalidated inside the transaction before saving', async () => {
   const h = harness({ revokeBeforeLock: true });
   await assert.rejects(h.service.saveForEmployee('employee-2', { revision: 0, changes: { monthlySalary: 8000 } }, 1), { name: 'ForbiddenError' });

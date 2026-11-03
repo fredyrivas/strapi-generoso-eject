@@ -43,6 +43,14 @@ function harness() {
   return { state, service: summaryFactory({ strapi }) };
 }
 
+test('operative payment summaries are denied before reading attendance or calculating payment', async () => {
+  const h = harness();
+  h.state.employees[0].teamRole = 'operative';
+  await assert.rejects(h.service.readForAccount(2), { name: 'ForbiddenError' });
+  await assert.rejects(h.service.readForEmployee('employee-2', 1), { name: 'ForbiddenError' });
+  assert.equal(h.state.queries.length, 0);
+});
+
 test('connects the saved base reference to this employee attendance, not the current calendar week', async () => {
   const h = harness(), before = structuredClone({ base: h.state.base, employees: h.state.employees, records: h.state.records });
   const result = await h.service.readForAccount(2);
@@ -55,11 +63,11 @@ test('connects the saved base reference to this employee attendance, not the cur
   for (const privateField of ['cardTips', 'cashTips', 'fixedMembers', 'auxiliaryMembers', 'accountId', 'employee-3', 'timestamp']) assert.equal(json.includes(`"${privateField}"`), false, privateField);
 });
 
-test('illness pays salary only and late attendance retains tips with a proportional punctuality bonus', async () => {
+test('illness pays salary only with a proportional punctuality bonus; a late day cancels the whole bonus', async () => {
   for (const kind of ['sick', 'normal']) {
     const h = harness(); h.state.records[5] = { ...normal(6), kind, timestamp: '2026-10-26T05:59:59Z', punctual: true };
     const { calculation } = await h.service.readForAccount(2);
-    assert.equal(calculation.attendance.paidDays, 7); close(calculation.salary, 2000); close(calculation.punctualityBonus, 100 * 5 / 6);
+    assert.equal(calculation.attendance.paidDays, 7); close(calculation.salary, 2000); close(calculation.punctualityBonus, kind === 'sick' ? 100 * 5 / 6 : 0);
     close(calculation.tips, kind === 'sick' ? 291.25 : 349.5);
     assert.equal(calculation.days[6].status, kind === 'sick' ? 'sick' : 'late');
   }
@@ -68,7 +76,7 @@ test('illness pays salary only and late attendance retains tips with a proportio
 test('normal attendance at the exact cutoff is late regardless of its old punctual boolean', async () => {
   const h = harness(); h.state.records[0].timestamp = '2026-10-20T14:05:59Z'; h.state.records[0].punctual = true;
   const result = await h.service.readForAccount(2);
-  assert.equal(result.calculation.days[1].status, 'late'); close(result.calculation.punctualityBonus, 100 * 5 / 6);
+  assert.equal(result.calculation.days[1].status, 'late'); assert.equal(result.calculation.punctualityBonus, 0);
 });
 
 test('excludes other employees and other weeks and allows an admin to calculate the selected employee', async () => {
