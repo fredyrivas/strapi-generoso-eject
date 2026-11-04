@@ -1244,6 +1244,132 @@ export interface ApiTeamEmployeeTeamEmployee
   };
 }
 
+export interface ApiTeamPaymentLogTeamPaymentLog
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'team_payment_logs';
+  info: {
+    displayName: 'Historial de pagos';
+    pluralName: 'team-payment-logs';
+    singularName: 'team-payment-log';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    actor: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 300;
+      }>;
+    after: Schema.Attribute.JSON & Schema.Attribute.Private;
+    area: Schema.Attribute.Enumeration<['base', 'employee', 'publication']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+    before: Schema.Attribute.JSON & Schema.Attribute.Private;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    employeeDocumentId: Schema.Attribute.String &
+      Schema.Attribute.Private &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 128;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::team-payment-log.team-payment-log'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    summary: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 300;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    weekStart: Schema.Attribute.Date &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiTeamPaymentWeekTeamPaymentWeek
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'team_payment_weeks';
+  info: {
+    displayName: 'Pago semanal';
+    pluralName: 'team-payment-weeks';
+    singularName: 'team-payment-week';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    adjustments: Schema.Attribute.JSON &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+    configuration: Schema.Attribute.JSON & Schema.Attribute.Private;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    employee: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::team-employee.team-employee'
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::team-payment-week.team-payment-week'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    revision: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 1;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<1>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    weekKey: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 180;
+      }>;
+    weekStart: Schema.Attribute.Date &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiTeamSalaryWeekTeamSalaryWeek
   extends Struct.CollectionTypeSchema {
   collectionName: 'team_salary_weeks';
@@ -1264,6 +1390,7 @@ export interface ApiTeamSalaryWeekTeamSalaryWeek
     };
   };
   attributes: {
+    closingRevenues: Schema.Attribute.JSON & Schema.Attribute.Private;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1276,13 +1403,10 @@ export interface ApiTeamSalaryWeekTeamSalaryWeek
       'api::team-salary-week.team-salary-week'
     > &
       Schema.Attribute.Private;
+    manualFixedDays: Schema.Attribute.JSON & Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
-    recordKey: Schema.Attribute.Enumeration<['base-sueldos']> &
-      Schema.Attribute.Required &
-      Schema.Attribute.Private &
-      Schema.Attribute.Unique &
-      Schema.Attribute.DefaultTo<'base-sueldos'>;
     referenceDate: Schema.Attribute.Date & Schema.Attribute.Private;
+    releasedAt: Schema.Attribute.DateTime & Schema.Attribute.Private;
     revision: Schema.Attribute.Integer &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMax<
@@ -1295,7 +1419,13 @@ export interface ApiTeamSalaryWeekTeamSalaryWeek
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    weekStart: Schema.Attribute.Date & Schema.Attribute.Private;
+    weekStart: Schema.Attribute.Date &
+      Schema.Attribute.Private &
+      Schema.Attribute.Unique;
+    weekStatus: Schema.Attribute.Enumeration<['draft', 'published']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.DefaultTo<'draft'>;
   };
 }
 
@@ -1825,6 +1955,8 @@ declare module '@strapi/strapi' {
       'api::supplier.supplier': ApiSupplierSupplier;
       'api::team-checkin.team-checkin': ApiTeamCheckinTeamCheckin;
       'api::team-employee.team-employee': ApiTeamEmployeeTeamEmployee;
+      'api::team-payment-log.team-payment-log': ApiTeamPaymentLogTeamPaymentLog;
+      'api::team-payment-week.team-payment-week': ApiTeamPaymentWeekTeamPaymentWeek;
       'api::team-salary-week.team-salary-week': ApiTeamSalaryWeekTeamSalaryWeek;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;

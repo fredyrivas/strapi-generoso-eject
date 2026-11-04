@@ -5,6 +5,18 @@ const FIELDS = ['cardTips', 'cashTips', 'fixedMembers', 'auxiliaryMembers', 'bon
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const exactKeys = (value, keys) => Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 
+const isClosingAmount = value => Number.isFinite(value) && value >= 0 && value <= Number.MAX_SAFE_INTEGER / 100;
+
+function closingBonus(revenue) {
+  return Math.min(6, Math.max(0, Math.floor(revenue / 1000) - 4)) * 100;
+}
+
+function dayIndices(value) {
+  if (!Array.isArray(value) || value.length > 7 || new Set(value).size !== value.length
+    || value.some(day => !Number.isInteger(day) || day < 0 || day > 6)) throw new ValidationError('Revisa los días seleccionados.');
+  return value;
+}
+
 function snapshotInput(value) {
   if (!object(value) || !exactKeys(value, ['weekStart', 'revision', 'days'])) throw new ValidationError('Revisa los datos de Base sueldos.');
   weekStartInput(value.weekStart);
@@ -55,4 +67,14 @@ function storedSnapshot(row) {
   return snapshotInput({ weekStart: row.weekStart, revision: row.revision, days });
 }
 
-module.exports = { snapshotInput, emptySnapshot, storedSnapshot, weekStartOf, weekStartInput, currentWeekStart };
+// Keep the persisted payroll rows compatible with existing consumers of Base sueldos.
+function closingRevenues(row) {
+  const revenues = row?.closingRevenues ?? {};
+  if (!object(revenues)) throw new ValidationError('Revisa los ingresos guardados del cierre.');
+  return new Map(Object.entries(revenues).map(([index, revenue]) => {
+    if (!/^[0-6]$/.test(index) || !isClosingAmount(revenue)) throw new ValidationError('Revisa los ingresos guardados del cierre.');
+    return [Number(index), revenue];
+  }));
+}
+
+module.exports = { snapshotInput, emptySnapshot, storedSnapshot, weekStartOf, weekStartInput, currentWeekStart, isClosingAmount, closingBonus, closingRevenues, dayIndices };

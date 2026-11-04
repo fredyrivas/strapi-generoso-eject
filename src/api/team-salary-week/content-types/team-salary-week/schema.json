@@ -10,6 +10,8 @@
     "weekStatus": { "type": "enumeration", "enum": ["draft", "published"], "default": "draft", "required": true, "private": true },
     "releasedAt": { "type": "datetime", "private": true },
     "revision": { "type": "integer", "required": true, "default": 1, "min": 1 },
-    "days": { "type": "json", "required": true, "private": true }
+    "days": { "type": "json", "required": true, "private": true },
+    "closingRevenues": { "type": "json", "private": true },
+    "manualFixedDays": { "type": "json", "private": true }
   }
 }

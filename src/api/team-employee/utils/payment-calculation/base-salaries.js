@@ -2,12 +2,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BASE_SALARIES_TIME_ZONE = void 0;
+exports.usesFixedAttendance = usesFixedAttendance;
 exports.emptyBaseSalariesInput = emptyBaseSalariesInput;
 exports.baseSalariesWeek = baseSalariesWeek;
 exports.calculateBaseSalariesDay = calculateBaseSalariesDay;
 exports.calculateBaseSalariesRows = calculateBaseSalariesRows;
 exports.calculateBaseSalariesWeek = calculateBaseSalariesWeek;
 exports.BASE_SALARIES_TIME_ZONE = "America/Mexico_City";
+// Earlier weeks retain the member counts entered during payroll capture.
+function usesFixedAttendance(weekStart) {
+    return weekStart >= "2026-11-02";
+}
 const dayLabels = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const inputFields = ["cardTips", "cashTips", "fixedMembers", "auxiliaryMembers", "bonuses"];
 function emptyBaseSalariesInput() {

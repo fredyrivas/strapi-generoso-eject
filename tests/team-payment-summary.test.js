@@ -24,17 +24,23 @@ function harness() {
   const strapi = {
     documents(uid) {
       if (uid === E) return {
+        findMany: async ({ filters }) => structuredClone(state.employees.filter(entry => filters.documentId.$in.includes(entry.documentId))),
         findFirst: async ({ filters }) => populated(state.employees.find(entry => entry.accountId === filters.account.id)),
         findOne: async ({ documentId }) => populated(state.employees.find(entry => entry.documentId === documentId)),
       };
       if (uid === B) return {
         findMany: async ({ filters, sort }) => { assert.deepEqual(filters, { weekStatus: 'published' }); assert.deepEqual(sort, ['weekStart:desc']); return structuredClone(state.bases.filter(row => row.weekStatus === 'published').sort((a, b) => b.weekStart.localeCompare(a.weekStart))); },
-        findFirst: async ({ filters, fields }) => { assert.deepEqual(fields, ['weekStart', 'weekStatus', 'revision', 'days']); return structuredClone(state.bases.find(row => row.weekStart === filters.weekStart) ?? null); },
+        findFirst: async ({ filters, fields }) => { assert.deepEqual(fields, ['weekStart', 'weekStatus', 'revision', 'days', 'manualFixedDays']); return structuredClone(state.bases.find(row => row.weekStart === filters.weekStart) ?? null); },
       };
       if (uid === P) return { findFirst: async ({ filters }) => structuredClone(state.weeks.find(row => row.weekKey === filters.weekKey) ?? null) };
       assert.equal(uid, A);
       return { findMany: async query => {
         assert.deepEqual(state.locks.slice(-2), [LOCK, 'generoso:team:base-salaries']);
+        if (query.filters.employee.teamRole === 'employee') {
+          assert.deepEqual(query.fields, ['date', 'kind']);
+          return state.records.filter(row => row.date >= query.filters.date.$gte && row.date < query.filters.date.$lt && row.date <= query.filters.date.$lte)
+            .map(row => ({ ...row, employee: { documentId: row.employee } }));
+        }
         assert.deepEqual(query.fields, ['date', 'timestamp', 'kind']); assert.equal(query.limit, 8);
         state.queries.push(structuredClone(query));
         return structuredClone(state.records.filter(row => row.employee === query.filters.employee.documentId && row.date >= query.filters.date.$gte && row.date < query.filters.date.$lt).slice(0, query.limit));
@@ -77,7 +83,9 @@ test('employees cannot open weeks in capture; admins can, and the default admin 
   await assert.rejects(h.service.readForAccount(2, '2026-11-02'), { name: 'NotFoundError' });
   await assert.rejects(h.service.readForAccount(2, '2026-10-26'), { name: 'NotFoundError' });
   await assert.rejects(h.service.readForAccount(2, '2026-11-03'), { name: 'ValidationError' });
+  h.state.records.push({ employee: 'employee-2', date: '2026-11-03', timestamp: '2026-11-03T14:00:00Z', kind: 'normal' });
   const admin = await h.service.readForEmployee('employee-2', 1);
+  close(admin.calculation.days[1].tips, 58.25);
   assert.equal(admin.weekStart, '2026-11-02'); assert.equal(admin.weekStatus, 'draft'); assert.deepEqual(admin.weeks, ['2026-10-19']);
   assert.equal(admin.adjustmentsRevision, 0); assert.deepEqual(admin.adjustments.consumptions, []);
   const empty = await h.service.readForEmployee('employee-2', 1, '2026-10-26');

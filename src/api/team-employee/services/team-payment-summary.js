@@ -4,6 +4,7 @@ const { LOCK } = require('../utils/attendance');
 const { attendanceKind } = require('../utils/attendance-kind');
 const { paymentAccount, paymentAdjustments } = require('../utils/payment-account');
 const { storedSnapshot, weekStartInput, currentWeekStart } = require('../../team-salary-week/utils/input');
+const { withFixedAttendance } = require('../../team-salary-week/utils/fixed-attendance');
 const { calculateEmployeePaymentRules } = require('../utils/payment-calculation/employee-payment-rules');
 const { calculateEmployeePaymentAdjustments, emptyPaymentAdjustments } = require('../utils/payment-calculation/employee-payment-adjustments');
 const { baseSalariesWeek } = require('../utils/payment-calculation/base-salaries');
@@ -20,7 +21,7 @@ module.exports = ({ strapi, clock = () => new Date() }) => {
       const account = await loadAccount();
       const weeks = (await strapi.documents(BASE).findMany({ filters: { weekStatus: 'published' }, fields: ['weekStart'], sort: ['weekStart:desc'], limit: 520 })).map(row => row.weekStart);
       const weekStart = requested !== undefined ? weekStartInput(requested) : member ? weeks[0] ?? null : currentWeekStart(clock());
-      const row = weekStart ? await strapi.documents(BASE).findFirst({ filters: { weekStart }, fields: ['weekStart', 'weekStatus', 'revision', 'days'] }) : null;
+      const row = weekStart ? await strapi.documents(BASE).findFirst({ filters: { weekStart }, fields: ['weekStart', 'weekStatus', 'revision', 'days', 'manualFixedDays'] }) : null;
       if (member && weekStart && row?.weekStatus !== 'published') throw new NotFoundError('Esa semana todavía no está publicada.');
       const week = weekStart ? await strapi.service('api::team-employee.team-payment').findWeek(account.employeeDocumentId, weekStart) : null;
       // A published week keeps the salary configuration it was published with.
@@ -39,7 +40,8 @@ module.exports = ({ strapi, clock = () => new Date() }) => {
         adjustments: calculateEmployeePaymentAdjustments(null, adjustments),
       };
       if (missingConfiguration.length || !row) return { ...metadata, status: missingConfiguration.length ? 'unconfigured' : 'base_pending', calculation: null };
-      const base = storedSnapshot(row);
+      const snapshot = storedSnapshot(row);
+      const base = row.weekStatus === 'published' ? snapshot : await withFixedAttendance(strapi, snapshot, clock(), row.manualFixedDays);
       const range = baseSalariesWeek(weekStart);
       const rows = await strapi.documents(ATTENDANCE).findMany({
         filters: { employee: { documentId: account.employeeDocumentId }, date: { $gte: range.start, $lt: range.endExclusive } },
