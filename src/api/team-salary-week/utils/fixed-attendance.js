@@ -13,7 +13,7 @@ function fixedAttendanceDays(days, week, records, manualFixedDays = []) {
     if (employee.paymentAccount.restDay !== dayIndex) present.add(employee.documentId);
   }
   return days.map(day => {
-    if (manualFixedDays.includes(day.dayIndex)) return day;
+    if (manualFixedDays?.includes(day.dayIndex)) return day;
     const { date } = week.days[day.dayIndex];
     return { ...day, input: { ...day.input, fixedMembers: date <= week.today ? people.get(date).size : null } };
   });

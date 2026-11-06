@@ -215,6 +215,24 @@ test('draft fixed members count unique Servicio/Fijo arrivals and freeze on publ
   assert.equal(reopened.days[0].input.fixedMembers, 0);
 });
 
+test('stored null manual fixed days allow reading and publishing with automatic attendance', async () => {
+  const h = harness();
+  const input = week('2026-11-02');
+  input.days[0].input = { cardTips: 100, cashTips: 20, fixedMembers: 99, auxiliaryMembers: 0, bonuses: 100 };
+  h.state.rows.push({ ...input, documentId: 'legacy-week', revision: 1, weekStatus: 'draft', releasedAt: null, manualFixedDays: null });
+  h.state.attendance.push({ date: '2026-11-02', kind: 'normal', employee: { documentId: 'employee-1', teamRole: 'employee', paymentAccount: { payGroup: 'fixed', restDay: null } } });
+  const before = structuredClone(h.state.rows);
+  const current = await h.service.read();
+  assert.deepEqual(current.days[0].input, { ...input.days[0].input, fixedMembers: 1 });
+  assert.deepEqual(current.days.map(day => day.input.fixedMembers), [1, 0, null, null, null, null, null]);
+  assert.equal(current.manualFixedDays, undefined);
+  assert.deepEqual(h.state.rows, before);
+  const published = await h.service.publish({ weekStart: input.weekStart, revision: 1, published: true }, admin);
+  assert.equal(published.weekStatus, 'published');
+  assert.equal(published.revision, 2);
+  assert.deepEqual(published.days[0].input, current.days[0].input);
+});
+
 test('manual fixed counts persist while automatic counts refresh for other dates', async () => {
   const h = harness();
   const input = week('2026-11-02');
