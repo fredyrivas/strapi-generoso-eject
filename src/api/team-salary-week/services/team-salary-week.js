@@ -83,6 +83,12 @@ module.exports = ({ strapi, clock = () => new Date() }) => {
       });
     },
 
+    async readDefaultWeek() {
+      const latest = await strapi.documents(UID).findFirst({ filters: { weekStatus: 'published' }, fields: ['weekStart'], sort: ['weekStart:desc'] });
+      const currentWeek = currentWeekStart(clock());
+      return { currentWeek, weekStart: latest?.weekStart ?? currentWeek };
+    },
+
     async read(weekStart = currentWeekStart(clock())) {
       weekStartInput(weekStart);
       if (!usesFixedAttendance(weekStart)) return dto(await find(weekStart), weekStart);

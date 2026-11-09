@@ -31,7 +31,7 @@ function snapshotInput(value) {
       const members = field === 'fixedMembers' || field === 'auxiliaryMembers';
       if (amount !== null && (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0
         || (members ? !Number.isSafeInteger(amount) || amount > Number.MAX_SAFE_INTEGER / 2 : amount > Number.MAX_SAFE_INTEGER / 100))) throw new ValidationError('Los importes deben ser números válidos no negativos y los integrantes deben ser cantidades enteras.');
-      input[field] = amount;
+      input[field] = field === 'auxiliaryMembers' && amount === null ? 0 : amount;
     }
     days.set(day.dayIndex, { dayIndex: day.dayIndex, input });
   }
@@ -51,7 +51,7 @@ function weekStartInput(value) {
 function currentWeekStart(now = new Date()) { return baseSalariesWeek(undefined, now).start; }
 
 function emptySnapshot(weekStart = currentWeekStart()) {
-  return { weekStart, revision: 0, days: Array.from({ length: 7 }, (_, dayIndex) => ({ dayIndex, input: Object.fromEntries(FIELDS.map(field => [field, null])) })) };
+  return { weekStart, revision: 0, days: Array.from({ length: 7 }, (_, dayIndex) => ({ dayIndex, input: Object.fromEntries(FIELDS.map(field => [field, field === 'auxiliaryMembers' ? 0 : null])) })) };
 }
 
 // Preserve already captured inputs from the former date-keyed representation on read.

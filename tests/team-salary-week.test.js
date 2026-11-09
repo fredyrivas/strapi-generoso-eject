@@ -25,7 +25,11 @@ function harness({ failCreate = false, failUpdate = false, clock = () => new Dat
   const table = uid => ({ [UID]: 'rows', [LOG]: 'logs', [P]: 'weeks' })[uid];
   const matches = (row, filters = {}) => Object.entries(filters).every(([key, value]) => row[key] === value);
   const docs = uid => ({
-    async findFirst({ filters }) { return structuredClone(state[table(uid)].find(row => matches(row, filters)) ?? null); },
+    async findFirst({ filters, sort }) {
+      const rows = state[table(uid)].filter(row => matches(row, filters));
+      if (sort?.[0] === 'weekStart:desc') rows.sort((a, b) => b.weekStart.localeCompare(a.weekStart));
+      return structuredClone(rows[0] ?? null);
+    },
     async findMany({ filters, fields, populate }) {
       if (uid === ATTENDANCE) {
         assert.equal(filters.employee.teamRole, 'employee');
@@ -77,6 +81,17 @@ function harness({ failCreate = false, failUpdate = false, clock = () => new Dat
 const week = (weekStart = '2026-10-26') => emptySnapshot(weekStart);
 const strip = ({ weekStatus, releasedAt, history, automaticBonusDays, manualFixedDays, ...snapshot }) => snapshot;
 
+test('the default payment week is the newest published Monday or the current week when none is published', async () => {
+  const h = harness();
+  const currentWeek = '2026-11-02';
+  h.state.rows.push({ weekStart: currentWeek, weekStatus: 'draft' });
+  assert.deepEqual(await h.service.readDefaultWeek(), { weekStart: currentWeek, currentWeek });
+  h.state.rows.push({ weekStart: '2026-10-19', weekStatus: 'published' }, { weekStart: '2026-10-26', weekStatus: 'published' });
+  assert.deepEqual(await h.service.readDefaultWeek(), { weekStart: '2026-10-26', currentWeek });
+  h.state.rows[2].weekStatus = 'draft';
+  assert.deepEqual(await h.service.readDefaultWeek(), { weekStart: '2026-10-19', currentWeek });
+});
+
 test('an unsaved week reads as an empty draft of the current Mexico City week, without writing', async () => {
   const h = harness();
   const value = await h.service.read();
@@ -84,10 +99,23 @@ test('an unsaved week reads as an empty draft of the current Mexico City week, w
   empty.days[0].input.fixedMembers = 0;
   empty.days[1].input.fixedMembers = 0;
   assert.deepEqual(value, { ...empty, weekStatus: 'draft', releasedAt: null, history: [] });
+  assert.ok(value.days.every(day => day.input.auxiliaryMembers === 0));
   assert.deepEqual(await h.service.read('2026-10-26'), { ...emptySnapshot('2026-10-26'), weekStatus: 'draft', releasedAt: null, history: [] });
   assert.equal(h.state.rows.length, 0);
   assert.deepEqual(h.state.locks, [LOCK, 'generoso:team:base-salaries']);
   for (const value of ['2026-10-27', '2026-02-30', '', '31/10/2026']) await assert.rejects(h.service.read(value), { name: 'ValidationError' });
+});
+
+test('stored blank auxiliary counts read as zero without rewriting the week', async () => {
+  const h = harness();
+  const stored = week();
+  stored.days[0].input.auxiliaryMembers = null;
+  stored.days[1].input.auxiliaryMembers = 2;
+  h.state.rows.push({ ...stored, weekStatus: 'draft' });
+  const result = await h.service.read(stored.weekStart);
+  assert.equal(result.days[0].input.auxiliaryMembers, 0);
+  assert.equal(result.days[1].input.auxiliaryMembers, 2);
+  assert.equal(h.state.rows[0].days[0].input.auxiliaryMembers, null);
 });
 
 test('the current week follows Mexico City across the UTC day boundary', () => {
@@ -269,16 +297,16 @@ test('the models keep one base per week and the routes stay session-protected', 
   const calls = [];
   const routes = router({ strapi: { controller: uid => {
     assert.equal(uid, UID);
-    return { read: ctx => calls.push(['read', ctx]), save: ctx => calls.push(['save', ctx]), publish: ctx => calls.push(['publish', ctx]), readDailyTips: ctx => calls.push(['readDailyTips', ctx]), saveDailyTips: ctx => calls.push(['saveDailyTips', ctx]) };
+    return { read: ctx => calls.push(['read', ctx]), readDefaultWeek: ctx => calls.push(['readDefaultWeek', ctx]), save: ctx => calls.push(['save', ctx]), publish: ctx => calls.push(['publish', ctx]), readDailyTips: ctx => calls.push(['readDailyTips', ctx]), saveDailyTips: ctx => calls.push(['saveDailyTips', ctx]) };
   } } }).routes;
-  assert.deepEqual(routes.map(route => [route.method, route.path]), [['GET', '/team-admin/base-salaries'], ['PUT', '/team-admin/base-salaries'], ['POST', '/team-admin/base-salaries/publish'], ['GET', '/team/daily-tips'], ['PUT', '/team/daily-tips']]);
+  assert.deepEqual(routes.map(route => [route.method, route.path]), [['GET', '/team-admin/base-salaries'], ['GET', '/team-admin/base-salaries/default-week'], ['PUT', '/team-admin/base-salaries'], ['POST', '/team-admin/base-salaries/publish'], ['GET', '/team/daily-tips'], ['PUT', '/team/daily-tips']]);
   for (const route of routes) {
     assert.equal(typeof route.handler, 'function');
     assert.deepEqual(route.config.auth, { strategies: ['users-permissions'], scope: [] });
     assert.deepEqual(route.config.policies, [route.path === '/team/daily-tips' ? 'api::team-employee.team-member' : 'api::team-employee.team-admin']);
     await route.handler({ fixture: true });
   }
-  assert.deepEqual(calls.map(call => call[0]), ['read', 'save', 'publish', 'readDailyTips', 'saveDailyTips']);
+  assert.deepEqual(calls.map(call => call[0]), ['read', 'readDefaultWeek', 'save', 'publish', 'readDailyTips', 'saveDailyTips']);
 });
 
 test('daily bonus uses complete income thresholds and caps at 600 pesos', () => {

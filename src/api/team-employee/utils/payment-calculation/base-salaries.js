@@ -73,9 +73,12 @@ function calculateBaseSalariesDay(input) {
     const { cardTips, cashTips, fixedMembers, auxiliaryMembers, bonuses } = values;
     const totalTips = cardTips !== null && cashTips !== null ? cardTips * (1 - 0.035) + cashTips : null;
     const members = fixedMembers !== null && auxiliaryMembers !== null ? fixedMembers + auxiliaryMembers : null;
+    const nothingToDistribute = members === 0 && totalTips === 0 && bonuses === 0;
     let individualTips = null;
     if (totalTips !== null && members !== null) {
-        if (members === 0)
+        if (nothingToDistribute)
+            individualTips = 0;
+        else if (members === 0)
             issues.push({ code: "zero_divisor", result: "individualTips" });
         else
             individualTips = totalTips / members;
@@ -84,6 +87,8 @@ function calculateBaseSalariesDay(input) {
     if (bonuses !== null && auxiliaryMembers !== null) {
         if (auxiliaryMembers > 0)
             fixedBonus = bonuses * 0.7;
+        else if (nothingToDistribute)
+            fixedBonus = 0;
         else if (fixedMembers === 0)
             issues.push({ code: "zero_divisor", result: "fixedBonus" });
         else if (fixedMembers !== null)

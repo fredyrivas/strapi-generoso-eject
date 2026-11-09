@@ -15,6 +15,9 @@ module.exports = {
       return strapi.service('api::team-salary-week.team-salary-week').read(ctx.query.week);
     });
   },
+  async readDefaultWeek(ctx) {
+    return run(ctx, () => strapi.service('api::team-salary-week.team-salary-week').readDefaultWeek());
+  },
   async save(ctx) { return run(ctx, () => strapi.service('api::team-salary-week.team-salary-week').save(ctx.request.body, ctx.state.user)); },
   async publish(ctx) { return run(ctx, () => strapi.service('api::team-salary-week.team-salary-week').publish(ctx.request.body, ctx.state.user)); },
 };
