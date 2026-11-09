@@ -262,7 +262,12 @@ test('payment data is private, absent from general profiles and cannot be edited
 
 test('settings routes are admin-only and their controller reads/writes using the authenticated actor', async () => {
   const routes = require('../src/api/team-employee/routes/payment-settings')({ strapi: {} }).routes;
-  assert.deepEqual(routes.map(route => [route.method, route.path]), [['GET', '/team-admin/employees/:documentId/payment/settings'], ['PATCH', '/team-admin/employees/:documentId/payment/settings'], ['GET', '/team-admin/employees/:documentId/payment/week'], ['PUT', '/team-admin/employees/:documentId/payment/week']]);
+  assert.deepEqual(routes.map(route => [route.method, route.path]), [
+    ['GET', '/team-admin/payment-statuses'],
+    ['GET', '/team-admin/employees/:documentId/payment/confirmations'], ['POST', '/team-admin/employees/:documentId/payment/confirmations'],
+    ['GET', '/team-admin/employees/:documentId/payment/settings'], ['PATCH', '/team-admin/employees/:documentId/payment/settings'],
+    ['GET', '/team-admin/employees/:documentId/payment/week'], ['PUT', '/team-admin/employees/:documentId/payment/week'],
+  ]);
   for (const route of routes) { assert.deepEqual(route.config.policies, ['api::team-employee.team-admin']); assert.deepEqual(route.config.auth, { strategies: ['users-permissions'], scope: [] }); }
   const h = harness(), previous = global.strapi, controller = require('../src/api/team-employee/controllers/team-payment-settings');
   global.strapi = { service: () => h.service };

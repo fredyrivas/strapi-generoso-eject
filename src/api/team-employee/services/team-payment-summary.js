@@ -13,7 +13,7 @@ const CONFIGURATION = ['monthlySalary', 'restDay', 'payGroup'];
 
 module.exports = ({ strapi, clock = () => new Date() }) => {
   // Employees only see published weeks; admins can open any week, published or in capture.
-  async function summary(loadAccount, requested, member) {
+  async function summary(loadAccount, requested, member, consume = value => value) {
     return strapi.db.transaction(async ({ trx }) => {
       // Attendance/payment changes and base changes stay stable for this entire read.
       // Always acquire attendance before base; base writes never acquire attendance.
@@ -39,7 +39,7 @@ module.exports = ({ strapi, clock = () => new Date() }) => {
         missingConfiguration,
         adjustments: calculateEmployeePaymentAdjustments(null, adjustments),
       };
-      if (missingConfiguration.length || !row) return { ...metadata, status: missingConfiguration.length ? 'unconfigured' : 'base_pending', calculation: null };
+      if (missingConfiguration.length || !row) return consume({ ...metadata, status: missingConfiguration.length ? 'unconfigured' : 'base_pending', calculation: null }, week, []);
       const snapshot = storedSnapshot(row);
       const base = row.weekStatus === 'published' ? snapshot : await withFixedAttendance(strapi, snapshot, clock(), row.manualFixedDays);
       const range = baseSalariesWeek(weekStart);
@@ -64,15 +64,15 @@ module.exports = ({ strapi, clock = () => new Date() }) => {
         throw new ApplicationError('Revisa los datos de asistencia y de la cuenta del empleado.');
       }
       // Only this employee's calculated shares leave the service, never the base inputs.
-      return { ...metadata, status: calculation.status, calculation, adjustments: calculateEmployeePaymentAdjustments(calculation.subtotal, adjustments, calculation) };
+      return consume({ ...metadata, status: calculation.status, calculation, adjustments: calculateEmployeePaymentAdjustments(calculation.subtotal, adjustments, calculation) }, week, rows, configuration);
     });
   }
   return {
     async readForAccount(accountId, week) {
       return summary(() => strapi.service('api::team-employee.team-payment').readForAccount(accountId), week, true);
     },
-    async readForEmployee(documentId, actorId, week) {
-      return summary(() => strapi.service('api::team-employee.team-payment').readForEmployee(documentId, actorId), week, false);
+    async readForEmployee(documentId, actorId, week, consume) {
+      return summary(() => strapi.service('api::team-employee.team-payment').readForEmployee(documentId, actorId), week, false, consume);
     },
   };
 };

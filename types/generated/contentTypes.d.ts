@@ -1344,6 +1344,9 @@ export interface ApiTeamPaymentWeekTeamPaymentWeek
       'api::team-payment-week.team-payment-week'
     > &
       Schema.Attribute.Private;
+    paymentConfirmations: Schema.Attribute.JSON & Schema.Attribute.Private;
+    paymentStatus: Schema.Attribute.Enumeration<['partial', 'paid']> &
+      Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
     revision: Schema.Attribute.Integer &
       Schema.Attribute.Required &
@@ -1426,6 +1429,62 @@ export interface ApiTeamSalaryWeekTeamSalaryWeek
       Schema.Attribute.Required &
       Schema.Attribute.Private &
       Schema.Attribute.DefaultTo<'draft'>;
+  };
+}
+
+export interface ApiTeamSettlementArchiveTeamSettlementArchive
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'team_settlement_archives';
+  info: {
+    displayName: 'Expediente de finiquito';
+    pluralName: 'team-settlement-archives';
+    singularName: 'team-settlement-archive';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    actorAccountId: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+    archiveKey: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 64;
+      }>;
+    combinedExitDate: Schema.Attribute.Date & Schema.Attribute.Private;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    employeeDocumentId: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 128;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::team-settlement-archive.team-settlement-archive'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    snapshot: Schema.Attribute.JSON &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -1958,6 +2017,7 @@ declare module '@strapi/strapi' {
       'api::team-payment-log.team-payment-log': ApiTeamPaymentLogTeamPaymentLog;
       'api::team-payment-week.team-payment-week': ApiTeamPaymentWeekTeamPaymentWeek;
       'api::team-salary-week.team-salary-week': ApiTeamSalaryWeekTeamSalaryWeek;
+      'api::team-settlement-archive.team-settlement-archive': ApiTeamSettlementArchiveTeamSettlementArchive;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

@@ -7,7 +7,7 @@ const { weekStartInput } = require('../../team-salary-week/utils/input');
 const { actorLabel, recordChange } = require('../../team-salary-week/utils/history');
 const E = 'api::team-employee.team-employee', U = 'plugin::users-permissions.user', P = 'api::team-payment-week.team-payment-week', BASE = 'api::team-salary-week.team-salary-week';
 const FIELDS = ['documentId', 'fullName', 'status', 'teamRole', 'paymentAccount'];
-const WEEK_FIELDS = ['documentId', 'weekStart', 'revision', 'adjustments', 'configuration'];
+const WEEK_FIELDS = ['documentId', 'weekStart', 'revision', 'adjustments', 'configuration', 'paymentConfirmations'];
 const POPULATE = { account: { fields: ['id', 'confirmed', 'blocked', 'provider'] } };
 
 function accountId(value) {

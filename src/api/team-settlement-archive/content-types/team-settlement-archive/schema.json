@@ -1,0 +1,14 @@
+{
+  "kind": "collectionType",
+  "collectionName": "team_settlement_archives",
+  "info": { "singularName": "team-settlement-archive", "pluralName": "team-settlement-archives", "displayName": "Expediente de finiquito" },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": { "content-manager": { "visible": false }, "content-type-builder": { "visible": false } },
+  "attributes": {
+    "archiveKey": { "type": "string", "required": true, "unique": true, "private": true, "maxLength": 64 },
+    "employeeDocumentId": { "type": "string", "required": true, "private": true, "maxLength": 128 },
+    "actorAccountId": { "type": "integer", "required": true, "private": true },
+    "combinedExitDate": { "type": "date", "private": true },
+    "snapshot": { "type": "json", "required": true, "private": true }
+  }
+}
