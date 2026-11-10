@@ -1,0 +1,19 @@
+{
+  "kind": "collectionType",
+  "collectionName": "team_candidates",
+  "info": { "singularName": "team-candidate", "pluralName": "team-candidates", "displayName": "Candidato de reclutamiento" },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": { "content-manager": { "visible": false }, "content-type-builder": { "visible": false } },
+  "attributes": {
+    "requestKey": { "type": "string", "required": true, "unique": true, "private": true },
+    "fullName": { "type": "string", "required": true, "private": true, "maxLength": 150 },
+    "phone": { "type": "string", "required": true, "private": true, "maxLength": 32 },
+    "position": { "type": "string", "required": true, "private": true, "maxLength": 100 },
+    "source": { "type": "string", "private": true },
+    "notes": { "type": "text", "private": true },
+    "stage": { "type": "enumeration", "enum": ["new", "phone", "interview", "evaluation"], "required": true, "private": true },
+    "status": { "type": "enumeration", "enum": ["new", "phone", "interview", "evaluation", "hired", "reserve", "discarded"], "required": true, "private": true },
+    "score": { "type": "integer", "required": true, "default": 0, "private": true },
+    "workflow": { "type": "json", "required": true, "private": true }
+  }
+}

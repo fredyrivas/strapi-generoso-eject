@@ -1092,6 +1092,91 @@ export interface ApiSupplierSupplier extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiTeamCandidateTeamCandidate
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'team_candidates';
+  info: {
+    displayName: 'Candidato de reclutamiento';
+    pluralName: 'team-candidates';
+    singularName: 'team-candidate';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    fullName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 150;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::team-candidate.team-candidate'
+    > &
+      Schema.Attribute.Private;
+    notes: Schema.Attribute.Text & Schema.Attribute.Private;
+    phone: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 32;
+      }>;
+    position: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    requestKey: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.Unique;
+    score: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private &
+      Schema.Attribute.DefaultTo<0>;
+    source: Schema.Attribute.String & Schema.Attribute.Private;
+    stage: Schema.Attribute.Enumeration<
+      ['new', 'phone', 'interview', 'evaluation']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+    status: Schema.Attribute.Enumeration<
+      [
+        'new',
+        'phone',
+        'interview',
+        'evaluation',
+        'hired',
+        'reserve',
+        'discarded',
+      ]
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    workflow: Schema.Attribute.JSON &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiTeamCheckinTeamCheckin extends Struct.CollectionTypeSchema {
   collectionName: 'team_checkins';
   info: {
@@ -2012,6 +2097,7 @@ declare module '@strapi/strapi' {
       'api::receta.receta': ApiRecetaReceta;
       'api::sandwiches-slider.sandwiches-slider': ApiSandwichesSliderSandwichesSlider;
       'api::supplier.supplier': ApiSupplierSupplier;
+      'api::team-candidate.team-candidate': ApiTeamCandidateTeamCandidate;
       'api::team-checkin.team-checkin': ApiTeamCheckinTeamCheckin;
       'api::team-employee.team-employee': ApiTeamEmployeeTeamEmployee;
       'api::team-payment-log.team-payment-log': ApiTeamPaymentLogTeamPaymentLog;
