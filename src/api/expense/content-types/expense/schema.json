@@ -1,0 +1,19 @@
+{
+  "kind": "collectionType",
+  "collectionName": "expenses",
+  "info": {
+    "singularName": "expense",
+    "pluralName": "expenses",
+    "displayName": "Gasto",
+    "description": "Registro de gastos y comprobantes, independiente del historial de costos."
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "supplier": { "type": "relation", "relation": "manyToOne", "target": "api::supplier.supplier", "required": true },
+    "date": { "type": "date", "required": true },
+    "amount": { "type": "decimal", "required": true, "min": 0.01 },
+    "concept": { "type": "string", "maxLength": 500 },
+    "reference": { "type": "string", "maxLength": 100 },
+    "receipt": { "type": "media", "multiple": false, "allowedTypes": ["images"] }
+  }
+}
