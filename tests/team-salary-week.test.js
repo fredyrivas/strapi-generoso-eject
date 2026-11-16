@@ -39,7 +39,7 @@ function harness({ failCreate = false, failUpdate = false, clock = () => new Dat
           .map(row => ({ ...row, employee: { documentId: row.employee.documentId } })));
       }
       if (uid === E && filters.documentId) {
-        assert.deepEqual(fields, ['documentId', 'teamRole', 'paymentAccount']);
+        assert.deepEqual(fields, ['documentId', 'teamRole']);
         return structuredClone([...new Map(state.attendance.map(row => [row.employee.documentId, row.employee])).values()]
           .filter(employee => filters.documentId.$in.includes(employee.documentId)));
       }
@@ -218,7 +218,7 @@ test('publishing freezes each paid employee configuration and returning to captu
   for (const value of [{ weekStart: '2026-10-26', revision: 3 }, { weekStart: '2026-10-27', revision: 3, published: true }, { weekStart: '2026-10-26', revision: 3, published: 'yes' }]) await assert.rejects(h.service.publish(value, admin), { name: 'ValidationError' });
 });
 
-test('draft fixed members count unique Servicio/Fijo arrivals and freeze on publication', async () => {
+test('draft fixed members count unique Servicio arrivals regardless of pay group or rest day and freeze on publication', async () => {
   const h = harness();
   const arrival = (documentId, teamRole = 'employee', payGroup = 'fixed', restDay = null) => ({
     date: '2026-11-02', kind: 'normal', employee: { documentId, teamRole, paymentAccount: { payGroup, restDay } },
@@ -226,21 +226,24 @@ test('draft fixed members count unique Servicio/Fijo arrivals and freeze on publ
   const one = arrival('employee-1');
   h.state.attendance.push(one, { ...one }, { ...arrival('employee-2'), kind: null }, { ...arrival('employee-3'), kind: 'sick' },
     arrival('employee-4', 'production'), arrival('employee-5', 'employee', 'auxiliary'), arrival('employee-6', 'employee', 'fixed', 0),
-    { ...arrival('employee-7'), date: '2026-11-04' });
+    { ...arrival('employee-7'), date: '2026-11-04' },
+    { date: '2026-11-02', kind: 'normal', employee: { documentId: 'employee-8', teamRole: 'employee', paymentAccount: null } },
+    arrival('employee-9', 'operative'), arrival('employee-10', 'admin'),
+    { ...arrival('employee-1'), date: '2026-11-03' });
   const input = week('2026-11-02');
   input.days[0].input = { cardTips: 100, cashTips: 40, fixedMembers: 99, auxiliaryMembers: 2, bonuses: 15 };
   const saved = await h.service.save(input, admin);
-  assert.deepEqual(saved.days.map(day => day.input.fixedMembers), [2, 0, null, null, null, null, null]);
-  assert.deepEqual(saved.days[0].input, { ...input.days[0].input, fixedMembers: 2 });
+  assert.deepEqual(saved.days.map(day => day.input.fixedMembers), [5, 1, null, null, null, null, null]);
+  assert.deepEqual(saved.days[0].input, { ...input.days[0].input, fixedMembers: 5 });
   one.kind = 'sick';
   h.state.attendance[1].kind = 'sick';
-  assert.equal((await h.service.read()).days[0].input.fixedMembers, 1);
+  assert.equal((await h.service.read()).days[0].input.fixedMembers, 4);
   const published = await h.service.publish({ weekStart: input.weekStart, revision: saved.revision, published: true }, admin);
-  assert.equal(published.days[0].input.fixedMembers, 1);
+  assert.equal(published.days[0].input.fixedMembers, 4);
   h.state.attendance[2].kind = 'sick';
-  assert.equal((await h.service.read()).days[0].input.fixedMembers, 1);
+  assert.equal((await h.service.read()).days[0].input.fixedMembers, 4);
   const reopened = await h.service.publish({ weekStart: input.weekStart, revision: published.revision, published: false }, admin);
-  assert.equal(reopened.days[0].input.fixedMembers, 0);
+  assert.equal(reopened.days[0].input.fixedMembers, 3);
 });
 
 test('stored null manual fixed days allow reading and publishing with automatic attendance', async () => {
@@ -316,7 +319,8 @@ test('daily bonus uses complete income thresholds and caps at 600 pesos', () => 
 
 test('daily closing stores revenue, tips and bonus together in the weekly draft', async () => {
   const h = harness();
-  const first = await h.service.readDailyTips();
+  const { previousWeek, ...first } = await h.service.readDailyTips();
+  assert.equal(previousWeek.days[0].date, '2026-10-27');
   assert.deepEqual(first, { weekStart: '2026-11-02', today: '2026-11-03', revision: 0, weekStatus: 'draft', days: [
     { date: '2026-11-02', cardTips: null, cashTips: null, revenue: null },
     { date: '2026-11-03', cardTips: null, cashTips: null, revenue: null },
@@ -346,7 +350,7 @@ test('daily closing stores revenue, tips and bonus together in the weekly draft'
   assert.deepEqual(current.days[1].input, { cardTips: 125.5, cashTips: 42, fixedMembers: 0, auxiliaryMembers: 2, bonuses: 0 });
   assert.equal(current.history[0].actor, 'operativo');
   assert.match(current.history[0].summary, /cierre del 3 de noviembre/);
-  for (const change of [{ date: '2026-11-01' }, { date: '2026-11-04' }, { cashTips: -1 }, { cardTips: null }, { revenue: null }, { revenue: -1 }, { bonuses: 10 }]) {
+  for (const change of [{ date: '2026-10-26' }, { date: '2026-11-04' }, { cashTips: -1 }, { cardTips: null }, { revenue: null }, { revenue: -1 }, { bonuses: 10 }]) {
     await assert.rejects(h.service.saveDailyTips({ ...input, revision: 4, ...change }, admin), { name: 'ValidationError' });
   }
   await h.service.publish({ weekStart: first.weekStart, revision: 4, published: true }, admin);
@@ -356,6 +360,45 @@ test('daily closing stores revenue, tips and bonus together in the weekly draft'
   assert.equal(published.days[1].revenue, 4999.99);
   assert.equal((await h.service.read()).days[1].input.bonuses, 0);
 });
+
+test('daily closing includes today and seven prior dates with independent weekly revisions and publication locks', async () => {
+  for (const [now, today, earliest] of [
+    ['2026-11-16T18:00:00Z', '2026-11-16', '2026-11-09'],
+    ['2026-11-16T05:59:59Z', '2026-11-15', '2026-11-08'],
+    ['2027-01-01T18:00:00Z', '2027-01-01', '2026-12-25'],
+  ]) {
+    const h = harness({ clock: () => new Date(now) });
+    const initial = await h.service.readDailyTips();
+    const dates = [...initial.previousWeek.days, ...initial.days].map(day => day.date);
+    assert.equal(dates.length, 8);
+    assert.equal(dates[0], earliest);
+    assert.equal(dates.at(-1), today);
+    assert.equal(h.state.rows.length, 0);
+    const input = { date: earliest, revision: 0, cardTips: 100, cashTips: 20, revenue: 7850 };
+    const saved = await h.service.saveDailyTips(input, admin);
+    assert.equal(saved.revision, 0);
+    assert.equal(saved.previousWeek.revision, 1);
+    assert.equal(saved.previousWeek.days[0].revenue, 7850);
+    assert.equal(h.state.rows[0].weekStart, initial.previousWeek.weekStart);
+    assert.equal(h.state.logs[0].weekStart, initial.previousWeek.weekStart);
+    const index = baseSalariesWeekIndex(earliest);
+    assert.equal(h.state.rows[0].days[index].input.bonuses, closingBonus(7850));
+    await assert.rejects(h.service.saveDailyTips(input, admin), error => error.details.code === 'TEAM_CONFLICT');
+    await h.service.saveDailyTips({ ...input, date: today }, admin);
+    assert.equal(h.state.rows.length, 2);
+    assert.equal((await h.service.readDailyTips()).previousWeek.days[0].cashTips, 20);
+    for (const date of [new Date(new Date(earliest + 'T12:00:00Z').getTime() - 86400000).toISOString().slice(0, 10), '2027-02-30', 'bad-date']) {
+      await assert.rejects(h.service.saveDailyTips({ ...input, date, revision: 1 }, admin), { name: 'ValidationError' });
+    }
+    await h.service.publish({ weekStart: saved.previousWeek.weekStart, revision: 1, published: true }, admin);
+    assert.equal((await h.service.readDailyTips()).previousWeek.weekStatus, 'published');
+    await assert.rejects(h.service.saveDailyTips({ ...input, revision: 2 }, admin), error => error.details.code === 'TEAM_CONFLICT');
+  }
+});
+
+function baseSalariesWeekIndex(date) {
+  return (new Date(date + 'T12:00:00Z').getUTCDay() + 6) % 7;
+}
 
 test('Servicio, Operativo and administrators can read and save daily closing in the CMS', async () => {
   const controller = require('../src/api/team-salary-week/controllers/team-salary-week');

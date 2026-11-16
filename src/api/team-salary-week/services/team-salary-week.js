@@ -26,16 +26,29 @@ module.exports = ({ strapi, clock = () => new Date() }) => {
       ...(manualFixedDays.length ? { manualFixedDays } : {}),
     };
   }
-  function tipsDto(row, week) {
+  function tipsDto(row, week, earliestDate) {
     const { revision, days } = row ? storedSnapshot(row) : emptySnapshot(week.start);
     const revenues = closingRevenues(row);
     return {
       weekStart: week.start, today: week.today, revision, weekStatus: row?.weekStatus === 'published' ? 'published' : 'draft',
       days: days.flatMap(({ dayIndex, input: { cardTips, cashTips } }) => {
         const { date } = week.days[dayIndex];
-        return date <= week.today ? [{ date, cardTips, cashTips, revenue: revenues.get(dayIndex) ?? null }] : [];
+        return date <= week.today && date >= earliestDate ? [{ date, cardTips, cashTips, revenue: revenues.get(dayIndex) ?? null }] : [];
       }),
     };
+  }
+
+  function tipsRange(now) {
+    const current = baseSalariesWeek(undefined, now);
+    const earliest = new Date(current.today + 'T12:00:00Z');
+    earliest.setUTCDate(earliest.getUTCDate() - 7);
+    const earliestDate = earliest.toISOString().slice(0, 10);
+    return { current, previous: baseSalariesWeek(earliestDate, now), earliestDate };
+  }
+
+  async function readTipsRange(range, saved) {
+    const read = async week => tipsDto(saved?.weekStart === week.start ? saved : await find(week.start), week, range.earliestDate);
+    return { ...await read(range.current), previousWeek: await read(range.previous) };
   }
 
   function checkRevision(row, revision) {
@@ -51,8 +64,7 @@ module.exports = ({ strapi, clock = () => new Date() }) => {
 
   return {
     async readDailyTips() {
-      const week = baseSalariesWeek(undefined, clock());
-      return tipsDto(await find(week.start), week);
+      return readTipsRange(tipsRange(clock()));
     },
 
     async saveDailyTips(value, user) {
@@ -62,9 +74,14 @@ module.exports = ({ strapi, clock = () => new Date() }) => {
       }
       return strapi.db.transaction(async ({ trx }) => {
         await lock(trx, BASE_LOCK);
-        const week = baseSalariesWeek(undefined, clock());
+        const now = clock();
+        const range = tipsRange(now);
+        if (typeof value.date !== 'string' || value.date < range.earliestDate || value.date > range.current.today
+          || ![...range.previous.days, ...range.current.days].some(day => day.date === value.date)) {
+          throw new ValidationError('Selecciona una fecha desde hace siete días hasta hoy.');
+        }
+        const week = baseSalariesWeek(value.date, now);
         const dayIndex = week.days.findIndex(day => day.date === value.date && day.date <= week.today);
-        if (dayIndex === -1) throw new ValidationError('Selecciona un día de la semana en curso hasta hoy.');
         if (!Number.isInteger(value.revision) || value.revision < 0 || value.revision > 2147483646) throw new ValidationError('La revisión de la base no es válida.');
         const row = await find(week.start);
         if (row?.weekStatus === 'published') throw new ApplicationError('La semana ya está publicada.', { code: 'TEAM_CONFLICT' });
@@ -79,7 +96,7 @@ module.exports = ({ strapi, clock = () => new Date() }) => {
         const saved = await persist(row, input, { closingRevenues: Object.fromEntries(revenues) });
         const after = { cardTips: day.input.cardTips, cashTips: day.input.cashTips, bonuses: day.input.bonuses, revenue: value.revenue };
         await recordChange(strapi, { weekStart: week.start, area: 'base', actor: actorLabel(user), summary: `Guardó cierre del ${week.days[dayIndex].dateLabel}`, before, after });
-        return tipsDto(saved, week);
+        return readTipsRange(range, saved);
       });
     },
 

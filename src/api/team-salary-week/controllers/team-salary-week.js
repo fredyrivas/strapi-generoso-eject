@@ -27,7 +27,7 @@ async function dailyTips(ctx, action) {
   const role = session?.profile?.teamRole;
   if (!session?.canAdmin && role !== 'employee' && role !== 'operative') return ctx.forbidden();
   return run(ctx, () => {
-    if (Object.keys(ctx.query).length) throw new ValidationError('Consulta los cierres de la semana en curso.');
+    if (Object.keys(ctx.query).length) throw new ValidationError('Consulta los cierres desde hace siete días hasta hoy.');
     return strapi.service('api::team-salary-week.team-salary-week')[action](ctx.request.body, ctx.state.user);
   });
 }

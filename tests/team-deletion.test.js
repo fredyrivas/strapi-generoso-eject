@@ -9,7 +9,7 @@ const Koa = require('koa');
 const { koaBody } = require('koa-body');
 const middlewares = require('../config/middlewares');
 const E = 'api::team-employee.team-employee', U = 'plugin::users-permissions.user', A = 'api::team-checkin.team-checkin';
-const confirmation = { confirmed: true, confirmationEmail: 'person@example.test', legacyDocumentIds: [] };
+const confirmation = { confirmed: true, scope: 'all', confirmationEmail: 'person@example.test', legacyDocumentIds: [] };
 
 test('configured body parser preserves the deletion confirmation and existing write methods', async () => {
   const bodyConfig = middlewares.find(entry => entry === 'strapi::body' || entry.name === 'strapi::body');
@@ -40,7 +40,9 @@ function harness(options = {}) {
       { documentId: 'person-3', accountId: 3, fullName: 'Otra persona', status: 'active', teamRole: 'employee' },
     ],
     checkins: [{ documentId: 'arrival-1', employee: 'person-2', date: '2026-10-28' }, { documentId: 'arrival-old', employee: 'person-2', date: '2026-10-01' }, { documentId: 'arrival-other', employee: 'person-3', date: '2026-10-28' }],
-    paymentWeeks: [{ documentId: 'week-1', employee: 'person-2', weekStart: '2026-10-26' }, { documentId: 'week-other', employee: 'person-3', weekStart: '2026-10-26' }],
+    paymentLogs: [{ documentId: 'log-own', employeeDocumentId: 'person-2', actor: 'admin' }, { documentId: 'log-other', employeeDocumentId: 'person-3', actor: 'person', after: { actor: 'person', amountCents: 500 } }],
+    settlementArchives: [{ documentId: 'archive-own', employeeDocumentId: 'person-2', actorAccountId: 1 }, { documentId: 'archive-other', employeeDocumentId: 'person-3', actorAccountId: 2, snapshot: { employee: { fullName: 'Otra persona' } } }],
+    paymentWeeks: [{ documentId: 'week-1', employee: 'person-2', weekStart: '2026-10-26' }, { documentId: 'week-other', employee: 'person-3', weekStart: '2026-10-26', paymentConfirmations: { events: [{ actor: 'person', amountCents: 500 }, { actor: 'admin', amountCents: 200 }] } }],
   };
   let queue = Promise.resolve();
   const populated = entry => entry ? { ...entry, account: state.accounts.find(account => account.id === entry.accountId) } : null;
@@ -51,15 +53,19 @@ function harness(options = {}) {
         findFirst: async ({ filters }) => state.employees.find(entry => entry.accountId === filters.account.id),
         delete: async ({ documentId }) => { state.employees = state.employees.filter(entry => entry.documentId !== documentId); },
       };
-      if (uid === A) return {
-        count: async ({ filters }) => state.checkins.filter(row => row.employee === filters.employee.documentId).length,
-        findMany: async ({ filters, limit }) => structuredClone(state.checkins.filter(row => row.employee === filters.employee.documentId).slice(0, limit)),
-        delete: async ({ documentId }) => { state.checkins = state.checkins.filter(row => row.documentId !== documentId); },
-      };
-      if (uid === 'api::team-payment-week.team-payment-week') return {
-        findMany: async ({ filters, limit }) => structuredClone(state.paymentWeeks.filter(row => row.employee === filters.employee.documentId).slice(0, limit)),
-        delete: async ({ documentId }) => { state.paymentWeeks = state.paymentWeeks.filter(row => row.documentId !== documentId); },
-      };
+      const collection = { [A]: 'checkins', 'api::team-payment-week.team-payment-week': 'paymentWeeks', 'api::team-payment-log.team-payment-log': 'paymentLogs', 'api::team-settlement-archive.team-settlement-archive': 'settlementArchives' }[uid];
+      if (collection) {
+        const matches = (row, filters) => filters.employee ? row.employee === filters.employee.documentId : filters.employeeDocumentId ? row.employeeDocumentId === filters.employeeDocumentId : true;
+        return {
+          count: async ({ filters }) => state[collection].filter(row => matches(row, filters)).length,
+          findMany: async ({ filters, start = 0, limit }) => structuredClone(state[collection].filter(row => matches(row, filters)).slice(start, start + limit)),
+          delete: async ({ documentId }) => {
+            if (options.failArchiveRemoval && collection === 'settlementArchives') throw new Error('archive-delete-failure');
+            state[collection] = state[collection].filter(row => row.documentId !== documentId);
+          },
+          update: async ({ documentId, data }) => Object.assign(state[collection].find(row => row.documentId === documentId), data),
+        };
+      }
       assert.fail('Unexpected document type: ' + uid);
     },
     db: {
@@ -72,7 +78,7 @@ function harness(options = {}) {
       transaction: async operation => {
         const previous = queue; let release; queue = new Promise(resolve => { release = resolve; }); await previous;
         const before = structuredClone(state);
-        try { return await operation({ trx: { raw: async (sql, bindings) => { assert.match(sql, /pg_advisory_xact_lock/); assert.deepEqual(bindings, [LOCK]); } } }); }
+        try { return await operation({ trx: { raw: async (sql, bindings) => { assert.match(sql, /pg_advisory_xact_lock/); assert.ok([LOCK, 'generoso:team:base-salaries'].includes(bindings[0])); } } }); }
         catch (error) { Object.assign(state, before); throw error; }
         finally { release(); }
       },
@@ -90,8 +96,8 @@ function harness(options = {}) {
 test('preview projects exact identity and all linked arrivals without exposing credentials or consulting the removed collection', async () => {
   const h = harness(), before = structuredClone(h.state);
   const preview = await h.service.preview('person-2', 1);
-  assert.deepEqual(Object.keys(preview).sort(), ['documentId', 'fullName', 'email', 'canDelete', 'reason', 'checkins', 'legacyCandidates'].sort());
-  assert.equal(preview.checkins, 2); assert.equal(preview.canDelete, true);
+  assert.deepEqual(Object.keys(preview).sort(), ['scope', 'documentId', 'fullName', 'email', 'canDelete', 'reason', 'checkins', 'paymentWeeks', 'paymentLogs', 'settlementArchives', 'legacyCandidates'].sort());
+  assert.equal(preview.scope, 'all'); assert.equal(preview.paymentWeeks, 1); assert.equal(preview.paymentLogs, 1); assert.equal(preview.settlementArchives, 1); assert.equal(preview.checkins, 2); assert.equal(preview.canDelete, true);
   assert.deepEqual(preview.legacyCandidates, []);
   assert.doesNotMatch(JSON.stringify(preview), /private|password|accountId/);
   assert.deepEqual(h.state, before);
@@ -101,7 +107,7 @@ test('deletion removes the entire account, current profile, onboarding secrets a
   const h = harness();
   const others = { account: structuredClone(h.state.accounts[2]), employee: structuredClone(h.state.employees[1]), checkin: structuredClone(h.state.checkins[2]) };
   const result = await h.service.remove('person-2', { ...confirmation, confirmationEmail: ' PERSON@example.test ' }, 1);
-  assert.deepEqual(result, { status: 'deleted', documentId: 'person-2', accountDeleted: true, checkinsDeleted: 2, legacyDeleted: 0 });
+  assert.deepEqual(result, { status: 'deleted', scope: 'all', documentId: 'person-2', accountDeleted: true, checkinsDeleted: 2, paymentWeeksDeleted: 1, paymentLogsDeleted: 1, settlementArchivesDeleted: 1, legacyDeleted: 0 });
   assert.equal(h.state.accounts.some(account => account.id === 2), false);
   assert.equal(h.state.employees.some(employee => employee.documentId === 'person-2'), false);
   assert.deepEqual(h.state.checkins, [others.checkin]);
@@ -130,7 +136,7 @@ test('self-deletion is refused and administrator authorization is checked agains
 });
 
 test('wrong email, forged account selectors and retired collection identifiers never delete anything', async () => {
-  for (const change of [{ confirmationEmail: 'other@example.test' }, { accountId: 3 }, { actorId: 1 }, { confirmed: false }, { legacyDocumentIds: ['unrelated'] }, { legacyDocumentIds: ['legacy-own', 'legacy-own'] }, { legacyDocumentIds: ['x/y'] }, { legacyDocumentIds: 'all' }]) {
+  for (const change of [{ scope: undefined }, { scope: 'profile' }, { confirmationEmail: 'other@example.test' }, { accountId: 3 }, { actorId: 1 }, { confirmed: false }, { legacyDocumentIds: ['unrelated'] }, { legacyDocumentIds: ['legacy-own', 'legacy-own'] }, { legacyDocumentIds: ['x/y'] }, { legacyDocumentIds: 'all' }]) {
     const h = harness(), before = structuredClone(h.state);
     await assert.rejects(h.service.remove('person-2', { ...confirmation, ...change }, 1));
     assert.deepEqual(h.state, before);
@@ -155,4 +161,30 @@ test('preview and deletion routes require authenticated administrative policy an
     await route.handler('context');
   }
   assert.deepEqual(called, [['preview', 'context'], ['remove', 'context']]);
+});
+
+test('full deletion erases payroll and settlement history while anonymizing contributions to other people', async () => {
+  const h = harness();
+  await h.service.remove('person-2', confirmation, 1);
+  assert.deepEqual(h.state.paymentLogs, [{ documentId: 'log-other', employeeDocumentId: 'person-3', actor: 'Cuenta eliminada', after: { actor: 'Cuenta eliminada', amountCents: 500 } }]);
+  assert.deepEqual(h.state.settlementArchives, [{ documentId: 'archive-other', employeeDocumentId: 'person-3', actorAccountId: 0, snapshot: { employee: { fullName: 'Otra persona' } } }]);
+  assert.deepEqual(h.state.paymentWeeks[0].paymentConfirmations.events, [{ actor: 'Cuenta eliminada', amountCents: 500 }, { actor: 'admin', amountCents: 200 }]);
+});
+
+test('archive deletion failure rolls back all earlier removals', async () => {
+  const h = harness({ failArchiveRemoval: true }), before = structuredClone(h.state);
+  await assert.rejects(h.service.remove('person-2', confirmation, 1), /archive-delete-failure/);
+  assert.deepEqual(h.state, before);
+});
+
+test('full deletion drains every page of history and does not skip attributed contributions', async () => {
+  const h = harness();
+  for (let i = 0; i < 205; i++) {
+    h.state.paymentLogs.push({ documentId: 'own-' + i, employeeDocumentId: 'person-2', actor: 'admin' });
+    h.state.paymentLogs.push({ documentId: 'other-' + i, employeeDocumentId: 'person-3', actor: 'person' });
+  }
+  const result = await h.service.remove('person-2', confirmation, 1);
+  assert.equal(result.paymentLogsDeleted, 206);
+  assert.equal(h.state.paymentLogs.length, 206);
+  assert.ok(h.state.paymentLogs.every(row => row.actor === 'Cuenta eliminada'));
 });

@@ -128,37 +128,41 @@ module.exports = {
         Object.keys(ctx.query).length || Buffer.byteLength(JSON.stringify(body)) > 64_000 || !validSnapshot(body.snapshot) || body.snapshot.combinedPayment !== undefined) {
       return ctx.badRequest('Revisa los datos del expediente.');
     }
-    const expectedKey = createHash('sha256').update(documentId).update('\0').update(JSON.stringify(body.snapshot)).digest('hex');
-    if (expectedKey !== body.id) return ctx.badRequest('La clave del expediente no corresponde a sus datos.');
-    const archives = strapi.documents(archiveType);
-    const find = () => archives.findFirst({ filters: { archiveKey: body.id }, fields });
-    const replay = entry => {
-      if (entry.employeeDocumentId !== documentId || !isDeepStrictEqual(entry.snapshot, body.snapshot)) {
-        return conflict(ctx, 'La clave del expediente ya está en uso con otros datos.');
-      }
-      ctx.body = dto(entry);
-    };
-    const existing = await find();
-    if (existing) return replay(existing);
+    return strapi.db.transaction(async ({ trx }) => {
+      // Serialize archive creation with full account deletion.
+      await trx.raw('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', [LOCK]);
+      const expectedKey = createHash('sha256').update(documentId).update('\0').update(JSON.stringify(body.snapshot)).digest('hex');
+      if (expectedKey !== body.id) return ctx.badRequest('La clave del expediente no corresponde a sus datos.');
+      const archives = strapi.documents(archiveType);
+      const find = () => archives.findFirst({ filters: { archiveKey: body.id }, fields });
+      const replay = entry => {
+        if (entry.employeeDocumentId !== documentId || !isDeepStrictEqual(entry.snapshot, body.snapshot)) {
+          return conflict(ctx, 'La clave del expediente ya está en uso con otros datos.');
+        }
+        ctx.body = dto(entry);
+      };
+      const existing = await find();
+      if (existing) return replay(existing);
 
-    const employee = await strapi.documents(employeeType).findOne({ documentId, fields: ['fullName', 'position', 'startDate'] });
-    if (!employee) return ctx.notFound('La persona seleccionada ya no existe.');
-    if (employee.fullName !== body.snapshot.employee.fullName || employee.position !== body.snapshot.employee.position ||
-        employee.startDate !== body.snapshot.basis.startDate) {
-      return conflict(ctx, 'La ficha de la persona cambió. Actualiza el listado antes de guardar.');
-    }
-    try {
-      const entry = await archives.create({
-        data: { archiveKey: body.id, employeeDocumentId: documentId, actorAccountId: ctx.state.user.id, snapshot: body.snapshot },
-        fields,
-      });
-      ctx.body = dto(entry);
-      ctx.status = 201;
-    } catch (error) {
-      const concurrent = await find();
-      if (!concurrent) throw error;
-      return replay(concurrent);
-    }
+      const employee = await strapi.documents(employeeType).findOne({ documentId, fields: ['fullName', 'position', 'startDate'] });
+      if (!employee) return ctx.notFound('La persona seleccionada ya no existe.');
+      if (employee.fullName !== body.snapshot.employee.fullName || employee.position !== body.snapshot.employee.position ||
+          employee.startDate !== body.snapshot.basis.startDate) {
+        return conflict(ctx, 'La ficha de la persona cambió. Actualiza el listado antes de guardar.');
+      }
+      try {
+        const entry = await archives.create({
+          data: { archiveKey: body.id, employeeDocumentId: documentId, actorAccountId: ctx.state.user.id, snapshot: body.snapshot },
+          fields,
+        });
+        ctx.body = dto(entry);
+        ctx.status = 201;
+      } catch (error) {
+        const concurrent = await find();
+        if (!concurrent) throw error;
+        return replay(concurrent);
+      }
+    });
   },
 
   async registerCombined(ctx) {

@@ -588,6 +588,54 @@ export interface ApiDesayunosSliderDesayunosSlider
   };
 }
 
+export interface ApiExpenseExpense extends Struct.CollectionTypeSchema {
+  collectionName: 'expenses';
+  info: {
+    description: 'Registro de gastos y comprobantes, independiente del historial de costos.';
+    displayName: 'Gasto';
+    pluralName: 'expenses';
+    singularName: 'expense';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    amount: Schema.Attribute.Decimal &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 0.01;
+        },
+        number
+      >;
+    concept: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    date: Schema.Attribute.Date & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::expense.expense'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    receipt: Schema.Attribute.Media<'images'>;
+    reference: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    supplier: Schema.Attribute.Relation<'manyToOne', 'api::supplier.supplier'> &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiGenerosoScreenGenerosoScreen
   extends Struct.CollectionTypeSchema {
   collectionName: 'generoso_screens';
@@ -2087,6 +2135,7 @@ declare module '@strapi/strapi' {
       'api::bebidas-category.bebidas-category': ApiBebidasCategoryBebidasCategory;
       'api::checklist-task.checklist-task': ApiChecklistTaskChecklistTask;
       'api::desayunos-slider.desayunos-slider': ApiDesayunosSliderDesayunosSlider;
+      'api::expense.expense': ApiExpenseExpense;
       'api::generoso-screen.generoso-screen': ApiGenerosoScreenGenerosoScreen;
       'api::home-slider.home-slider': ApiHomeSliderHomeSlider;
       'api::menu-category.menu-category': ApiMenuCategoryMenuCategory;

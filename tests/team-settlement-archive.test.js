@@ -123,7 +123,7 @@ test('combined transfer rolls back every allocation on error, replays a retry an
 test('keeps prior snapshots, scopes listing by person and replays a save after an employee update', async () => {
   const rows = [];
   let fullName = identity.fullName;
-  global.strapi = { documents(uid) {
+  global.strapi = { db: { transaction: run => run({ trx: { raw: async (_sql, args) => { assert.equal(args[0], require('../src/api/team-employee/utils/attendance').LOCK); } } }) }, documents(uid) {
     if (uid === 'api::team-employee.team-employee') return { findOne: async () => ({ ...identity, fullName, startDate: snapshot.basis.startDate }) };
     assert.equal(uid, 'api::team-settlement-archive.team-settlement-archive');
     return {

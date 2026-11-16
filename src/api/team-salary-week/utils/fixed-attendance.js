@@ -8,9 +8,8 @@ function fixedAttendanceDays(days, week, records, manualFixedDays = []) {
   const people = new Map(week.days.map(({ date }) => [date, new Set()]));
   for (const { date, kind, employee } of records) {
     const present = people.get(date);
-    if (!present || employee?.teamRole !== 'employee' || employee.paymentAccount?.payGroup !== 'fixed' || attendanceKind(kind) !== 'normal') continue;
-    const dayIndex = week.days.findIndex(day => day.date === date);
-    if (employee.paymentAccount.restDay !== dayIndex) present.add(employee.documentId);
+    if (!present || employee?.teamRole !== 'employee' || attendanceKind(kind) !== 'normal') continue;
+    present.add(employee.documentId);
   }
   return days.map(day => {
     if (manualFixedDays?.includes(day.dayIndex)) return day;
@@ -33,10 +32,9 @@ async function withFixedAttendance(strapi, snapshot, now, manualFixedDays) {
         sort: ['id:asc'], start, limit,
       });
       const ids = [...new Set(rows.flatMap(row => row.employee ? [row.employee.documentId] : []))];
-      // Strapi restricts private fields in nested population. Load payment accounts through the employee service.
       const employees = ids.length ? await strapi.documents(EMPLOYEE).findMany({
         filters: { documentId: { $in: ids } },
-        fields: ['documentId', 'teamRole', 'paymentAccount'], limit: ids.length,
+        fields: ['documentId', 'teamRole'], limit: ids.length,
       }) : [];
       const byId = new Map(employees.map(employee => [employee.documentId, employee]));
       records.push(...rows.map(row => ({ ...row, employee: byId.get(row.employee?.documentId) })));
