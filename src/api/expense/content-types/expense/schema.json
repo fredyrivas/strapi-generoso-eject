@@ -12,6 +12,9 @@
     "supplier": { "type": "relation", "relation": "manyToOne", "target": "api::supplier.supplier", "required": true },
     "date": { "type": "date", "required": true },
     "amount": { "type": "decimal", "required": true, "min": 0.01 },
+    "category": { "type": "enumeration", "enum": ["unclassified", "supplies", "personnel", "rent", "utilities", "commissions", "maintenance", "administration", "advertising", "interest", "taxes", "other_operating", "loan_principal", "equipment", "owner_withdrawals"], "default": "unclassified" },
+    "importKey": { "type": "string", "unique": true, "maxLength": 120 },
+    "importSource": { "type": "json" },
     "concept": { "type": "string", "maxLength": 500 },
     "reference": { "type": "string", "maxLength": 100 },
     "receipt": { "type": "media", "multiple": false, "allowedTypes": ["images"] }
