@@ -16,6 +16,7 @@
     "importKey": { "type": "string", "unique": true, "maxLength": 120 },
     "importSource": { "type": "json" },
     "concept": { "type": "string", "maxLength": 500 },
+    "notes": { "type": "text", "maxLength": 4000 },
     "reference": { "type": "string", "maxLength": 100 },
     "receipt": { "type": "media", "multiple": false, "allowedTypes": ["images"] }
   }
